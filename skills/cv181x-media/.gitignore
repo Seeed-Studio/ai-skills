@@ -1,0 +1,35 @@
+# Git ignore for cv181x-media skill
+
+# Packaged skill file (generated)
+*.skill
+
+# Learning and feedback data (private)
+.learning_data.json
+.usage_feedback.log
+.suggestions.md
+.update_log_*.txt
+.tmp_update_*/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Build artifacts
+*.pyc
+__pycache__/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Test outputs
+/test_output/

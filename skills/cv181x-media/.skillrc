@@ -1,0 +1,42 @@
+# Skill Configuration
+
+# Version
+VERSION=2.1.0
+
+# Auto-update settings
+AUTO_UPDATE_ENABLED=true
+CHECK_SDK_UPDATES=monthly
+CHECK_USAGE_PATTERNS=weekly
+
+# SDK paths (for update detection)
+SDK_PATH=/home/baozhu/storage/reCamera-OS/output/sg2002_recamera_emmc
+SDK_INCLUDE_PATH=$SDK_PATH/cvi_mpi/include
+SDK_LIB_PATH=$SDK_PATH/cvi_mpi/lib
+
+# Learning settings
+COLLECT_FEEDBACK=true
+FEEDBACK_LOG_PATH=./.usage_feedback.log
+LEARNING_DATA_PATH=./.learning_data.json
+
+# Validation settings
+VALIDATE_BEFORE_COMMIT=true
+REQUIRE_TESTS=false
+
+# Git settings
+GIT_REMOTE=origin
+GIT_BRANCH=main
+AUTO_COMMIT=false
+AUTO_TAG=false
+
+# Package settings
+PACKAGE_ON_UPDATE=true
+PACKAGE_OUTPUT_DIR=..
+
+# Notification settings (optional)
+NOTIFY_ON_UPDATE=false
+NOTIFY_EMAIL=
+
+# Maintenance schedule
+NEXT_SDK_CHECK=
+NEXT_USAGE_ANALYSIS=
+LAST_UPDATE=$(date +%Y-%m-%d)
