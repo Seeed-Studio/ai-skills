@@ -5,6 +5,20 @@ All notable changes to the CV181X Media Skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## Maintenance Notice
+
+**As of 2026-01-27**, this skill is maintained by **Seeed Studio** as part of the [ai-skills repository](https://github.com/Seeed-Studio/ai-skills).
+
+- **Original work by**: [Pillar1989](https://github.com/Pillar1989/cv181x-media)
+- **Seeed version starting from**: v2.3.0 (inherited from original)
+- **Future versions**: Will be released independently under Seeed Studio's maintenance
+
+For contributions and issues, please visit: https://github.com/Seeed-Studio/ai-skills
+
+---
+
 ## [2.3.0] - 2026-01-20
 
 ### Added

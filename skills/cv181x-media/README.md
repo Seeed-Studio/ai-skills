@@ -1,6 +1,10 @@
 # CV181X/CV182X/CV180X Multimedia API Skill
 
-Expert guidance skill for CV181X/CV182X/CV180X multimedia development on Sophgo platforms.
+> **Maintained by**: Seeed Studio  
+> **Repository**: https://github.com/Seeed-Studio/ai-skills  
+> **Original work by**: [Pillar1989](https://github.com/Pillar1989/cv181x-media)
+
+Expert guidance skill for CV181X/CV182X/CV180X multimedia development on Sophgo platforms (reCamera).
 
 ## Overview
 
@@ -105,23 +109,31 @@ git diff v1.0.0    # Compare with previous version
 
 ## Usage
 
-Install this skill in Claude Code:
-```bash
-# From .skill file
-claude skills install cv181x-media.skill
+Install this skill in Claude Code or Codex:
 
-# Or from git repository
-claude skills install git+https://your-repo/cv181x-media.git
+```bash
+# Claude
+claude skills install git+https://github.com/Seeed-Studio/ai-skills#subdirectory=skills/cv181x-media
+
+# Codex
+codex skills install git+https://github.com/Seeed-Studio/ai-skills#subdirectory=skills/cv181x-media
 ```
+
+Once installed, ask your AI assistant questions like:
+- "How to configure VI module to capture 1080p video?"
+- "Show me how to add timestamp OSD to video stream"
+- "How to correct barrel distortion from wide-angle lens?"
 
 ## Contributing
 
-To improve this skill:
+To improve this skill, please contribute to the main repository: https://github.com/Seeed-Studio/ai-skills
 
 1. Fork the repository
-2. Create feature branch
+2. Create feature branch: `git checkout -b feature/cv181x-media-improvement`
 3. Make improvements
 4. Submit pull request
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 
 ### Feedback Collection
 
@@ -145,9 +157,14 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## License
 
-This skill is maintained for internal development use.
+This skill is licensed under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+This skill was originally created by [Pillar1989](https://github.com/Pillar1989/cv181x-media) and is now maintained by Seeed Studio for the reCamera developer community.
 
 ## Authors
 
-- Initial creation: 2026-01-17
+- Original creation: Pillar1989, 2026-01-17
+- Maintained by: Seeed Studio, 2026-01-27+
 - Auto-update system: Enabled
