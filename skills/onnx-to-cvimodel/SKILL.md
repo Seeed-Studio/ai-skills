@@ -1,6 +1,6 @@
 ---
 name: onnx-to-cvimodel
-description: Expert guide for converting YOLO models (YOLO11/YOLO26) from ONNX to CVIMODEL format for Sophgo CV181x TPU. Includes tested conversion scripts, quantization tables (qtables), and complete workflow documentation. Use when user needs to: (1) Convert YOLO ONNX models to CVIMODEL, (2) Set up TPU-MLIR conversion pipeline, (3) Configure output names and quantization for YOLO models, (4) Troubleshoot conversion issues.
+description: "Expert guide for converting YOLO models (YOLO11/YOLO26) from ONNX to CVIMODEL format for Sophgo CV181x TPU. Includes tested conversion scripts, quantization tables (qtables), and complete workflow documentation. Use when user needs to convert YOLO ONNX models to CVIMODEL, set up TPU-MLIR conversion pipeline, configure output names and quantization for YOLO models, or troubleshoot conversion issues."
 license: Complete terms in LICENSE.txt
 ---
 
