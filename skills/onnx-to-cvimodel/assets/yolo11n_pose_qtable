@@ -1,0 +1,25 @@
+# op_name   quantize_mode
+/model.23/dfl/Reshape_1_output_0_Reshape BF16
+/model.23/Slice_output_0_Slice BF16
+/model.23/Slice_1_output_0_Slice BF16
+/model.23/Sub_output_0_Sub BF16
+/model.23/Add_10_output_0_Add BF16
+/model.23/Add_11_output_0_Add BF16
+/model.23/Sub_1_output_0_Sub BF16
+/model.23/Div_1_output_0_Div BF16
+/model.23/Concat_29_output_0_Concat BF16
+/model.23/Mul_5_output_0_Mul BF16
+
+/model.23/Sigmoid_output_0_Sigmoid BF16
+
+/model.23/Reshape_21_output_0_Reshape BF16
+/model.23/Slice_2_output_0_Slice BF16
+/model.23/Slice_3_output_0_Slice BF16
+/model.23/Mul_6_output_0_Mul BF16
+/model.23/Mul_7_output_0_Mul BF16
+/model.23/Add_12_output_0_Add BF16
+/model.23/Sigmoid_1_output_0_Sigmoid BF16
+/model.23/Concat_31_output_0_Concat BF16
+/model.23/Reshape_22_output_0_Reshape BF16
+
+output0_Concat BF16

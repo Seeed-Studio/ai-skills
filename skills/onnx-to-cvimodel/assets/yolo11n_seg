@@ -1,0 +1,32 @@
+# op_name   quantize_mode
+/model.4/cv2/act/Mul_output_0_Mul BF16
+/model.5/conv/Conv_output_0_Conv BF16
+/model.15/Concat_output_0_Concat BF16
+/model.6/cv1/conv/Conv_output_0_Conv BF16
+/model.6/cv1/act/Mul_output_0_Mul BF16
+/model.6/Slice_output_0_Slice BF16
+/model.6/Concat_output_0_Concat BF16
+/model.6/Slice_1_output_0_Slice BF16
+/model.6/m.0/cv1/conv/Conv_output_0_Conv BF16
+/model.6/m.0/cv2/conv/Conv_output_0_Conv BF16
+/model.6/Concat_output_0_Concat BF16
+/model.10/m/m.0/attn/Transpose_1_output_0_Transpose BF16
+/model.10/m/m.0/attn/MatMul_1_output_0_MatMul BF16
+/model.23/Sigmoid_output_0_Sigmoid BF16
+
+/model.23/dfl/Reshape_1_output_0_Reshape BF16
+/model.23/Slice_output_0_Slice BF16
+/model.23/Slice_1_output_0_Slice BF16
+/model.23/Sub_output_0_Sub BF16
+/model.23/Add_10_output_0_Add BF16
+/model.23/Add_11_output_0_Add BF16
+/model.23/Sub_1_output_0_Sub BF16
+/model.23/Div_1_output_0_Div BF16
+/model.23/Concat_29_output_0_Concat BF16
+/model.23/Mul_5_output_0_Mul BF16
+
+/model.23/Concat_3_output_0_Concat BF16
+/model.23/Concat_28_output_0_Concat BF16
+
+output0_Concat BF16
+output1_Concat BF16

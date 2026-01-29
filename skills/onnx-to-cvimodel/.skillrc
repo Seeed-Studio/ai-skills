@@ -1,0 +1,35 @@
+# Skill Configuration
+
+# Version
+VERSION=1.0.0
+
+# Maintainer
+MAINTAINER=LynnL4
+EMAIL=lht856@foxmail.com
+
+# Auto-update settings
+AUTO_UPDATE_ENABLED=false
+CHECK_MODEL_UPDATES=monthly
+
+# TPU-MLIR settings
+DOCKER_IMAGE=sophgo/tpuc_dev:v3.1
+DEFAULT_CHIP=cv181x
+DEFAULT_CALIBRATION_EPOCHS=100
+
+# Supported models
+SUPPORTED_MODELS=yolo11,yolo26
+SUPPORTED_TASKS=detect,pose,seg,cls
+
+# Q-table paths
+QTABLE_POSE=assets/yolo11n_pose_qtable
+QTABLE_SEG=assets/yolo11n_seg
+
+# Validation settings
+VALIDATE_BEFORE_COMMIT=true
+REQUIRE_TESTS=false
+
+# Package settings
+PACKAGE_OUTPUT_DIR=.
+
+# Last update
+LAST_UPDATE=2026-01-29
