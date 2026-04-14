@@ -7,6 +7,27 @@ description: Guide for adapting Seeed Studio XIAO series development boards to n
 
 Adapt new MCU chips to Seeed Studio XIAO series development boards. This skill provides workflows for three platforms, each following: **pull base project -> generate/modify config -> compile and verify**.
 
+## Step 0: Mandatory User Input (MUST ASK FIRST)
+
+**Do NOT proceed to any other step until ALL items below are collected from the user.**
+
+Ask the user these questions upfront, even if some information can be guessed from context:
+
+1. **板子产品名**: "这个板子的产品名叫什么？" (e.g., "XIAO ESP32C3", "XIAO nRF52840 Sense", "XIAO SAMD21-Plus")
+   - If the user does not provide one, propose a name and ask for confirmation
+   - Derive the board identifier: `seeed_xiao_<chip_series>` from the product name
+   - This name is used in `boards.txt`, `platformio.ini`, `mpconfigboard.h`, and all output files
+
+2. **USB VID/PID**: "USB VID 和 PID 是多少？如果还没有，需要找内部团队申请。"
+   - The user MUST provide this — never fabricate or guess VID/PID values
+   - If the user does not have one yet, remind them to contact Seeed internal team to apply, and **pause** until they provide it
+   - VID/PID is required for: `boards.txt` (vid/pid fields), `mpconfigboard.h` (USB_VID/USB_PID), `board.json` (usb_pid)
+
+3. **目标平台**: "需要适配哪些平台？" — Arduino / PlatformIO / MicroPython / 全部
+   - Determine from user response, default to all if unspecified
+
+Only after ALL three items are confirmed, proceed to Step 1.
+
 ## Platform Selection
 
 Determine the target platform from user context, then read the corresponding reference:
@@ -31,13 +52,7 @@ Examples: `seeed_xiao_rp2040`, `seeed_xiao_esp32c3`, `seeed_xiao_stm32f103`
 
 ## Workflow Overview
 
-**Before anything else, ask the user for the board product name.** This determines all identifiers used throughout the adaptation:
-
-- Ask: "这个板子的产品名叫什么？" (e.g., "XIAO ESP32C3", "XIAO nRF52840 Sense")
-- Derive the board identifier: `seeed_xiao_<chip_series>` (e.g., `seeed_xiao_esp32c3`)
-- Use the product name in `boards.txt` display name, `platformio.ini` comments, `mpconfigboard.h` `MICROPY_HW_BOARD_NAME`, and wiki URL
-
-Two entry paths after naming: **Schematic-Driven** (auto-extract from schematic) or **Manual** (user provides chip info).
+Two entry paths: **Schematic-Driven** (auto-extract from schematic) or **Manual** (user provides chip info).
 
 ### Path A: Schematic-Driven Workflow (Preferred)
 
@@ -137,9 +152,8 @@ When no schematic is available, gather chip information from the user or datashe
 - Package type and pin count
 - Debug interface (SWD, JTAG, USB-Serial)
 - Key peripherals (SPI, I2C, UART, ADC, PWM, USB)
-- USB VID/PID (must be provided by user — contact Seeed internal team to apply, never fabricate values)
 
-If information is incomplete, ask the user for the missing items.
+If information is incomplete, ask the user for the missing items. Note: VID/PID is already collected in Step 0.
 
 ### Step 2: Pull Base Project
 
