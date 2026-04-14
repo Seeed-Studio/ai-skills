@@ -31,7 +31,13 @@ Examples: `seeed_xiao_rp2040`, `seeed_xiao_esp32c3`, `seeed_xiao_stm32f103`
 
 ## Workflow Overview
 
-Two entry paths: **Schematic-Driven** (auto-extract from schematic) or **Manual** (user provides chip info).
+**Before anything else, ask the user for the board product name.** This determines all identifiers used throughout the adaptation:
+
+- Ask: "这个板子的产品名叫什么？" (e.g., "XIAO ESP32C3", "XIAO nRF52840 Sense")
+- Derive the board identifier: `seeed_xiao_<chip_series>` (e.g., `seeed_xiao_esp32c3`)
+- Use the product name in `boards.txt` display name, `platformio.ini` comments, `mpconfigboard.h` `MICROPY_HW_BOARD_NAME`, and wiki URL
+
+Two entry paths after naming: **Schematic-Driven** (auto-extract from schematic) or **Manual** (user provides chip info).
 
 ### Path A: Schematic-Driven Workflow (Preferred)
 
@@ -96,6 +102,7 @@ python <schematic-analyzer>/scripts/schematic-cli.py query <project_path> --net 
 Compile all extracted data into a structured summary:
 
 ```
+Board: <product name from user>  (ID: seeed_xiao_<chip_series>)
 MCU: <model> (<core architecture>)
 MPN: <manufacturer part number>
 Flash: <size>  RAM: <size>
