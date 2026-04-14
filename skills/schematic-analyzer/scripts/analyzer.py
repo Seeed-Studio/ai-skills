@@ -8,11 +8,8 @@ Phase 3: Topology extraction
 """
 
 import json
-import os
 import re
-import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +24,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from cache_manager import CacheManager
 from tools.connectivity_builder import ConnectivityBuilder
 from tools.core_ranker import rank_core_candidates
+from tools.constants import DEFAULT_QUERY_LIMIT as _CONST_QUERY_LIMIT
 from tools.overlay_interpreter import OverlayInterpreter
 from tools.project_indexer import ProjectIndexer
 from tools.scope_resolver import ScopeResolver
@@ -50,7 +48,7 @@ class AnalysisResult:
 class SchematicAnalyzer:
     """Main analyzer class for KiCad schematics."""
 
-    DEFAULT_QUERY_LIMIT = 10
+    DEFAULT_QUERY_LIMIT = _CONST_QUERY_LIMIT
 
     def __init__(
         self,
@@ -81,6 +79,7 @@ class SchematicAnalyzer:
         self._project_index = None
         self._overlay_interpreter = None
         self._synthesis_engine = None
+        self._connectivity_graph = None
         self._components = []
         self._nets = []
         self._hierarchy = []
@@ -403,7 +402,12 @@ class SchematicAnalyzer:
                 sha256.update(child.read_bytes())
 
     def _compute_structural_context_signature(self) -> str:
-        """Compute a stable signature for structural-only inputs."""
+        """Compute a stable signature for structural-only inputs.
+
+        TODO: incorporate schematic content hash (component count, net topology
+        fingerprint, key component references) so structural cache keys actually
+        distinguish different designs.
+        """
         return ""
 
     def _compute_yaml_signature(self) -> str:
@@ -522,6 +526,9 @@ class SchematicAnalyzer:
             "project_overview": {
                 "project_page_count": len(page_navigation),
                 "project_component_count": len(self.project_index.components),
+                "project_active_component_count": sum(
+                    1 for c in self.project_index.components.values() if not c.flags.get("dnp")
+                ),
                 "project_net_count": len(phase_1["nets"]),
                 "root_schematic_filename": self.scope.root_schematic.name,
                 "referenced_page_count": len(self.scope.referenced_sheets),
@@ -1268,6 +1275,9 @@ class SchematicAnalyzer:
         comp_dicts: list[dict[str, Any]] = []
         for component in self.project_index.components.values():
             connected_nets = []
+            # instance_id is always equal to the uppercase reference designator
+            # (set during indexing in ProjectIndexer.build). component_nets is
+            # also keyed by uppercase reference, so this lookup is correct.
             if component_nets and component.instance_id in component_nets:
                 connected_nets = sorted(
                     {
@@ -1304,8 +1314,13 @@ class SchematicAnalyzer:
         """Phase 1: Netlist semantic parsing.
 
         Uses kicad-cli to export netlist and parse for accurate pin-level connectivity.
+        Result is cached on the instance to avoid redundant rebuilds.
         """
-        graph = ConnectivityBuilder().build(self.project_index, self.schematic_path)
+        if self._connectivity_graph is not None:
+            graph = self._connectivity_graph
+        else:
+            graph = ConnectivityBuilder().build(self.project_index, self.schematic_path)
+            self._connectivity_graph = graph
 
         net_dicts = []
         for net_name in sorted(graph.all_nets):
@@ -1340,45 +1355,6 @@ class SchematicAnalyzer:
             "netlist_available": graph.netlist_available,
             "connectivity_warnings": list(graph.warnings),
         }
-
-    def _export_netlist(self) -> Optional[Path]:
-        """Export netlist using kicad-cli.
-
-        Returns:
-            Path to exported netlist or None if failed
-        """
-        import subprocess
-        import tempfile
-
-        try:
-            # Create temp file for netlist
-            fd, temp_path = tempfile.mkstemp(suffix=".xml")
-            os.close(fd)
-
-            # Run kicad-cli to export netlist
-            result = subprocess.run(
-                [
-                    "kicad-cli", "sch", "export", "netlist",
-                    "--format", "kicadxml",
-                    "-o", temp_path,
-                    str(self.schematic_path)
-                ],
-                capture_output=True,
-                timeout=60,
-            )
-
-            if result.returncode == 0:
-                return Path(temp_path)
-            else:
-                print(f"kicad-cli netlist export failed: {result.stderr}", file=sys.stderr)
-                return None
-
-        except FileNotFoundError:
-            print("kicad-cli not found, skipping netlist export", file=sys.stderr)
-            return None
-        except Exception as e:
-            print(f"Netlist export error: {e}", file=sys.stderr)
-            return None
 
     def _run_phase_2(
         self,
@@ -1510,11 +1486,11 @@ class SchematicAnalyzer:
                 for p in sub.get("participants", []):
                     ref = p.get("ref", "")
                     if ref:
-                        participant_refs.add(ref)
+                        participant_refs.add(ref.upper())
                 # Collect controller ref
                 ctrl = sub.get("controller", {})
                 if ctrl and ctrl.get("ref"):
-                    participant_refs.add(ctrl.get("ref"))
+                    participant_refs.add(ctrl.get("ref").upper())
 
         # Filter components to those in focused subsystems
         if participant_refs:

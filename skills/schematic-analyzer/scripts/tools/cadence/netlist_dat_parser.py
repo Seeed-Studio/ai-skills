@@ -13,6 +13,7 @@ Key features:
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from typing import Optional
@@ -106,12 +107,7 @@ def _select_mux_pin_name(pin_id: str, net_name: str) -> str:
         if candidate == net_name:
             return candidate
 
-    # Fallback: return first valid option (often the GPIO name ends with _D)
-    # Prefer GPIO over other functions as it's the safe default
-    for candidate in valid_candidates:
-        if candidate.endswith('_D'):
-            return candidate
-
+    # Fallback: return first valid option
     return valid_candidates[0]
 
 
@@ -280,6 +276,15 @@ def parse_pstxprt(file_path: Path) -> dict[str, dict]:
 
         # Check for PART_NAME block start
         if line.startswith('PART_NAME'):
+            # If previous component had SECTION_NUMBER but no P_PATH, save it now
+            if current_refdes and current_section:
+                page_info[current_refdes] = {
+                    "primitive": current_value,
+                    "page": f"page{current_section}",
+                    "footprint": "",
+                    "value": current_value,
+                }
+
             # Next line has: REFDES 'VALUE':;
             if i + 1 < len(lines):
                 next_line = lines[i + 1].strip()
@@ -312,18 +317,6 @@ def parse_pstxprt(file_path: Path) -> dict[str, dict]:
                 current_refdes = ""
                 current_value = ""
                 current_section = ""
-
-        # If we reached a new PART_NAME without finding P_PATH, use SECTION_NUMBER
-        elif line.startswith('PART_NAME') and current_refdes and current_section:
-            page_info[current_refdes] = {
-                "primitive": current_value,
-                "page": f"page{current_section}",
-                "footprint": "",
-                "value": current_value,
-            }
-            current_refdes = ""
-            current_value = ""
-            current_section = ""
 
         i += 1
 
@@ -362,8 +355,9 @@ def _extract_page_from_path(ppath: str) -> str:
     if m:
         return f"page{m.group(1)}"
 
-    # Fallback: use the full path hash as a unique page identifier
-    return f"page_{hash(ppath) % 10000}"
+    # Fallback: use a deterministic hash of the full path as a unique page identifier
+    digest = hashlib.md5(ppath.encode('utf-8', errors='ignore')).hexdigest()[:4]
+    return f"page_{digest}"
 
 
 def build_pin_net_map_from_dat(netlist_dir: Path) -> dict[str, dict[str, str]]:

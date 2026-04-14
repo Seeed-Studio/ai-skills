@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from .kicad.netlist_parser import NetlistParser
+from .constants import DEFAULT_NET_TYPE, FORMAT_CADENCE, KICAD_CLI_TIMEOUT
 from .project_indexer import ProjectIndex
 
 
@@ -45,7 +46,7 @@ class ConnectivityBuilder:
         root_path = Path(root_schematic).resolve()
 
         # Use Cadence connectivity builder for Cadence projects
-        if getattr(project_index.scope, "format", "kicad") == "cadence":
+        if getattr(project_index.scope, "format", "kicad") == FORMAT_CADENCE:
             from .cadence.connectivity import CadenceConnectivityBuilder
             return CadenceConnectivityBuilder().build(project_index, root_path)
 
@@ -65,12 +66,17 @@ class ConnectivityBuilder:
 
         netlist_parser = NetlistParser(str(netlist_path))
         netlist_data = netlist_parser._parse_file()
+        # Clean up temp file after parsing
+        try:
+            netlist_path.unlink(missing_ok=True)
+        except OSError:
+            pass
         warnings.extend(netlist_data.get("warnings", []))
 
         for reference, component in netlist_data.get("components", {}).items():
             component_nets[reference] = {
                 "pins": dict(component.pins),
-                "net_count": len(component.pins),
+                "pin_count": len(component.pins),
                 "reference": component.reference,
                 "sheet_path": component.sheet_instance_path,
             }
@@ -81,7 +87,7 @@ class ConnectivityBuilder:
             all_nets[net_name] = NetConnection(
                 net_name=net_name,
                 net_code=net.code,
-                net_type="Unclassified",
+                net_type=DEFAULT_NET_TYPE,
                 connected_refs=connected_refs,
                 connected_pins=connected_pins,
             )
@@ -95,9 +101,9 @@ class ConnectivityBuilder:
         )
 
     def _export_netlist(self, root_schematic: Path) -> Optional[Path]:
+        fd, temp_path = tempfile.mkstemp(suffix=".xml")
+        os.close(fd)
         try:
-            fd, temp_path = tempfile.mkstemp(suffix=".xml")
-            os.close(fd)
             result = subprocess.run(
                 [
                     "kicad-cli",
@@ -112,14 +118,17 @@ class ConnectivityBuilder:
                 ],
                 capture_output=True,
                 text=True,
-                timeout=60,
+                timeout=KICAD_CLI_TIMEOUT,
                 check=False,
             )
         except FileNotFoundError:
+            Path(temp_path).unlink(missing_ok=True)
             return None
         except Exception:
+            Path(temp_path).unlink(missing_ok=True)
             return None
 
         if result.returncode != 0:
+            Path(temp_path).unlink(missing_ok=True)
             return None
         return Path(temp_path)

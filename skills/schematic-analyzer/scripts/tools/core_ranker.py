@@ -61,6 +61,11 @@ def rank_core_candidates(
         if not reference:
             continue
 
+        # Skip DNP components — they are not populated on the board
+        flags = component.get("flags", {})
+        if isinstance(flags, dict) and flags.get("dnp"):
+            continue
+
         score = calculate_structural_score(component)
         if score <= 0:
             continue

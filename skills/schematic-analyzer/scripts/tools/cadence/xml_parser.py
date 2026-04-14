@@ -29,6 +29,30 @@ _CADENCE_PIN_TYPES = {
     "7": "power_in",
 }
 
+# Property-based DNP detection rules.
+# Each entry: (property_name, {match_values})  — matched case-insensitively.
+# Extend this list to support new DNP/assembly property conventions.
+_CADENCE_DNP_PROP_RULES: list[tuple[str, frozenset[str]]] = [
+    ("ASSY",              frozenset({"DNP"})),
+    ("DNP",               frozenset({"TRUE", "1", "YES"})),
+    ("POPULATE",          frozenset({"NO", "FALSE", "0"})),
+    ("EXCLUDE_FROM_BOM",  frozenset({"TRUE", "1", "YES"})),
+    ("Status",            frozenset({"DNP", "DO NOT POPULATE", "NOT FITTED", "NF"})),
+]
+
+# Value-based DNP markers — if component value matches exactly, it's DNP.
+_CADENCE_DNP_VALUE_MARKERS: frozenset[str] = frozenset({
+    "DNP", "NC", "NF", "NO STUFF", "DNS", "DO NOT POPULATE",
+})
+
+
+def _safe_int(val: Any, default: int = 0) -> int:
+    """Convert a value to int, returning *default* on any failure."""
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
 
 @dataclass
 class _WireSegment:
@@ -208,7 +232,6 @@ class CadenceXMLParser:
         if not self.file_path.exists():
             raise FileNotFoundError(f"Cadence XML file not found: {file_path}")
 
-        self._include_child_sheets = include_child_sheets
         self._tree: Optional[ET.ElementTree] = None
         self._root: Optional[ET.Element] = None
 
@@ -228,9 +251,20 @@ class CadenceXMLParser:
         """Parse the XML file if not already done."""
         if self._tree is not None:
             return
-        self._tree = ET.parse(self.file_path)
+        try:
+            self._tree = ET.parse(self.file_path)
+        except ET.ParseError as exc:
+            raise ValueError(
+                f"Failed to parse Cadence XML file '{self.file_path}': {exc}"
+            ) from exc
         self._root = self._tree.getroot()
-        self._parse_all()
+        try:
+            self._parse_all()
+        except Exception:
+            # Reset so a retry will re-parse from scratch
+            self._tree = None
+            self._root = None
+            raise
 
     def _parse_all(self) -> None:
         """Parse all data from the XML tree."""
@@ -262,8 +296,8 @@ class CadenceXMLParser:
             if pin is not None:
                 pin_defn = pin.find("Defn")
                 if pin_defn is not None:
-                    hx = int(pin_defn.get("hotptX", "0"))
-                    hy = int(pin_defn.get("hotptY", "0"))
+                    hx = _safe_int(pin_defn.get("hotptX", "0"))
+                    hy = _safe_int(pin_defn.get("hotptY", "0"))
                     if sym_name not in self._symbol_pin_offsets:
                         self._symbol_pin_offsets[sym_name] = (hx, hy)
 
@@ -277,8 +311,8 @@ class CadenceXMLParser:
             if pin is not None:
                 pin_defn = pin.find("Defn")
                 if pin_defn is not None:
-                    hx = int(pin_defn.get("hotptX", "0"))
-                    hy = int(pin_defn.get("hotptY", "0"))
+                    hx = _safe_int(pin_defn.get("hotptX", "0"))
+                    hy = _safe_int(pin_defn.get("hotptY", "0"))
                     if sym_name not in self._symbol_pin_offsets:
                         self._symbol_pin_offsets[sym_name] = (hx, hy)
 
@@ -287,7 +321,10 @@ class CadenceXMLParser:
         rotation: int = 0, mirror: int = 0,
     ) -> tuple[int, int]:
         """Calculate the wire connection point for a Global or OffPage symbol."""
-        pin_offset = self._symbol_pin_offsets.get(symbol_name, (10, 0))
+        pin_offset = self._symbol_pin_offsets.get(symbol_name)
+        if pin_offset is None:
+            # Unknown symbol — use symbol's own position as connection point
+            return (loc_x, loc_y)
         return _get_symbol_connection_point_static(loc_x, loc_y, pin_offset, rotation, mirror)
 
     def _parse_pages(self) -> None:
@@ -357,10 +394,10 @@ class CadenceXMLParser:
         # Part info
         pkg_name = defn.get("pkgName", "")
         lib_name = defn.get("libName", "")
-        loc_x = int(defn.get("locX", "0"))
-        loc_y = int(defn.get("locY", "0"))
-        mirror = int(defn.get("mirror", "0"))
-        rotation = int(defn.get("rotation", "0"))
+        loc_x = _safe_int(defn.get("locX", "0"))
+        loc_y = _safe_int(defn.get("locY", "0"))
+        mirror = _safe_int(defn.get("mirror", "0"))
+        rotation = _safe_int(defn.get("rotation", "0"))
         device_designator = defn.get("deviceDesignator", "")
         db_id = defn.get("dbId", "")
 
@@ -386,8 +423,8 @@ class CadenceXMLParser:
             pin_name = port_defn.get("name", "")
             position_idx = port_defn.get("position", "0")
             pin_type_code = port_defn.get("type", "4")
-            hotpt_x = int(port_defn.get("hotptX", "0"))
-            hotpt_y = int(port_defn.get("hotptY", "0"))
+            hotpt_x = _safe_int(port_defn.get("hotptX", "0"))
+            hotpt_y = _safe_int(port_defn.get("hotptY", "0"))
 
             # Check no-connect
             is_nc = False
@@ -452,10 +489,10 @@ class CadenceXMLParser:
                     if wire_defn is None:
                         continue
 
-                    start_x = int(wire_defn.get("startX", "0"))
-                    start_y = int(wire_defn.get("startY", "0"))
-                    end_x = int(wire_defn.get("endX", "0"))
-                    end_y = int(wire_defn.get("endY", "0"))
+                    start_x = _safe_int(wire_defn.get("startX", "0"))
+                    start_y = _safe_int(wire_defn.get("startY", "0"))
+                    end_x = _safe_int(wire_defn.get("endX", "0"))
+                    end_y = _safe_int(wire_defn.get("endY", "0"))
 
                     net_data.wires.append(_WireSegment(
                         start_x=start_x,
@@ -472,8 +509,8 @@ class CadenceXMLParser:
                             alias_name = alias_defn.get("name", "")
                             if alias_name:
                                 net_data.name = alias_name
-                            alias_x = int(alias_defn.get("locX", "0"))
-                            alias_y = int(alias_defn.get("locY", "0"))
+                            alias_x = _safe_int(alias_defn.get("locX", "0"))
+                            alias_y = _safe_int(alias_defn.get("locY", "0"))
                             net_data.alias_positions.append((alias_x, alias_y))
 
                 # Use raw name from NetScalar Defn if no alias found  
@@ -506,11 +543,11 @@ class CadenceXMLParser:
                 self._globals.append(_GlobalData(
                     name=name,
                     symbol_name=defn.get("symbolName", ""),
-                    loc_x=int(defn.get("locX", "0")),
-                    loc_y=int(defn.get("locY", "0")),
+                    loc_x=_safe_int(defn.get("locX", "0")),
+                    loc_y=_safe_int(defn.get("locY", "0")),
                     page_index=page_idx,
-                    rotation=int(defn.get("rotation", "0")),
-                    mirror=int(defn.get("mirror", "0")),
+                    rotation=_safe_int(defn.get("rotation", "0")),
+                    mirror=_safe_int(defn.get("mirror", "0")),
                 ))
 
     def _parse_offpage(self) -> None:
@@ -539,11 +576,11 @@ class CadenceXMLParser:
                 self._offpage.append(_OffPageData(
                     name=name,
                     symbol_name=defn.get("symbolName", ""),
-                    loc_x=int(defn.get("locX", "0")),
-                    loc_y=int(defn.get("locY", "0")),
+                    loc_x=_safe_int(defn.get("locX", "0")),
+                    loc_y=_safe_int(defn.get("locY", "0")),
                     page_index=page_idx,
-                    rotation=int(defn.get("rotation", "0")),
-                    mirror=int(defn.get("mirror", "0")),
+                    rotation=_safe_int(defn.get("rotation", "0")),
+                    mirror=_safe_int(defn.get("mirror", "0")),
                     iref=iref,
                 ))
 
@@ -604,9 +641,10 @@ class CadenceXMLParser:
                 # Exact match first
                 key = alias_to_key.get(pname)
                 if key is None:
-                    # Substring match: check if any alias is contained in pname
+                    # Substring match: check if any alias is contained in pname,
+                    # but require word boundary to avoid false positives (e.g. "date" matching "validate")
                     for alias, mapped_key in alias_to_key.items():
-                        if alias in pname:
+                        if alias in pname and (pname == alias or '_' in pname or pname.endswith(alias)):
                             key = mapped_key
                             break
 
@@ -628,12 +666,18 @@ class CadenceXMLParser:
         coord_to_net: dict[tuple[int, int, int], str] = {}
         net_id_to_name: dict[int, str] = {}
         unnamed_counter = 0
+        coord_conflicts: list[tuple[tuple[int, int, int], str, str]] = []
 
         # Step 1: Register all wire endpoints with their net
         for net_data in self._nets_data:
             for wire in net_data.wires:
-                coord_to_net[(net_data.page_index, wire.start_x, wire.start_y)] = f"__net_{net_data.net_id}"
-                coord_to_net[(net_data.page_index, wire.end_x, wire.end_y)] = f"__net_{net_data.net_id}"
+                for wx, wy in ((wire.start_x, wire.start_y), (wire.end_x, wire.end_y)):
+                    key = (net_data.page_index, wx, wy)
+                    new_val = f"__net_{net_data.net_id}"
+                    existing = coord_to_net.get(key)
+                    if existing is not None and existing != new_val:
+                        coord_conflicts.append((key, existing, new_val))
+                    coord_to_net[key] = new_val
 
         # Step 2: Register Global symbols — they create named nets at their connection points
         # Globals with the same name across pages are the same net
@@ -645,7 +689,10 @@ class CadenceXMLParser:
             )
             coord_to_net[(glob.page_index, conn_x, conn_y)] = glob_net_name
             # Also propagate: find which internal net this global connects to
+            _matched = False
             for net_data in self._nets_data:
+                if _matched:
+                    break
                 if net_data.page_index != glob.page_index:
                     continue
                 for wire in net_data.wires:
@@ -653,6 +700,7 @@ class CadenceXMLParser:
                             (wire.end_x == conn_x and wire.end_y == conn_y)):
                         # This net connects to this global — assign the global's name
                         net_id_to_name[net_data.net_id] = glob_net_name
+                        _matched = True
                         break
 
         # Step 3: Register OffPageConnectors — same name across pages = same net
@@ -663,13 +711,17 @@ class CadenceXMLParser:
                 rotation=opc.rotation, mirror=opc.mirror,
             )
             coord_to_net[(opc.page_index, conn_x, conn_y)] = opc_net_name
+            _matched = False
             for net_data in self._nets_data:
+                if _matched:
+                    break
                 if net_data.page_index != opc.page_index:
                     continue
                 for wire in net_data.wires:
                     if ((wire.start_x == conn_x and wire.start_y == conn_y) or
                             (wire.end_x == conn_x and wire.end_y == conn_y)):
                         net_id_to_name[net_data.net_id] = opc_net_name
+                        _matched = True
                         break
 
         # Step 4: Assign names from Alias labels
@@ -715,8 +767,70 @@ class CadenceXMLParser:
         # Store resolved net names for later
         self._net_id_to_name = net_id_to_name
 
+        # Store coordinate conflicts for diagnostics
+        self._coord_conflicts = coord_conflicts
+
+    def _is_dnp_component(self, properties: dict[str, str], value: str = "") -> bool:
+        """Check if component is marked DNP via properties or value.
+
+        Detection strategy (two dimensions):
+        1. Property-based: match PartInstUserProp against _CADENCE_DNP_PROP_RULES
+        2. Value-based: check if component value is a known DNP marker
+
+        Rules are data-driven — extend _CADENCE_DNP_PROP_RULES and
+        _CADENCE_DNP_VALUE_MARKERS at module level to support new conventions
+        without modifying this method.
+        """
+        # Dimension 1: property-based detection
+        for prop_key, prop_val in properties.items():
+            key_upper = prop_key.strip().upper()
+            val_upper = prop_val.strip().upper()
+            for rule_name, rule_values in _CADENCE_DNP_PROP_RULES:
+                if key_upper == rule_name.upper() and val_upper in rule_values:
+                    return True
+
+        # Dimension 2: value-based detection
+        if value and value.strip().upper() in _CADENCE_DNP_VALUE_MARKERS:
+            return True
+
+        return False
+
+    def _parse_assembly_flags(self, properties: dict[str, str], value: str = "") -> dict[str, bool]:
+        """Parse assembly/BOM flags from PartInstUserProp and component value.
+
+        Replaces the hardcoded all-True defaults with values derived from
+        the component's actual OrCAD properties and value field.
+        """
+        dnp = self._is_dnp_component(properties, value)
+        return {
+            "dnp": dnp,
+            "in_bom": not dnp,
+            "on_board": not dnp,
+            "exclude_from_sim": dnp,
+        }
+
+    def _filter_dnp(
+        self, components: list[SchematicComponent], include_dnp: bool = False,
+    ) -> list[SchematicComponent]:
+        """Filter DNP components from a list.
+
+        Args:
+            components: Component list to filter.
+            include_dnp: If True, return all components including DNP.
+
+        Returns:
+            Filtered component list.
+        """
+        if include_dnp:
+            return list(components)
+        return [c for c in components if not c.flags.get("dnp", False)]
+
     def _build_components(self) -> None:
-        """Build SchematicComponent list from parsed parts."""
+        """Build SchematicComponent list from parsed parts.
+
+        All components are retained with correct assembly flags.
+        DNP filtering is deferred to public methods (get_components, etc.).
+        """
         self._components = []
         # Merge multi-part components (same reference, different deviceDesignator)
         ref_parts: dict[str, list[_PartData]] = {}
@@ -760,6 +874,9 @@ class CadenceXMLParser:
             if primary.pkg_name:
                 lib_id = f"{lib_id}:{primary.pkg_name}" if lib_id else primary.pkg_name
 
+            # Parse flags from properties + value (no longer hardcoded)
+            flags = self._parse_assembly_flags(merged_props, value=primary.value)
+
             self._components.append(SchematicComponent(
                 reference=ref,
                 value=primary.value,
@@ -769,7 +886,7 @@ class CadenceXMLParser:
                 position=(float(primary.loc_x), float(primary.loc_y)),
                 unit=None,
                 pins=all_pins,
-                flags={"dnp": False, "in_bom": True, "on_board": True, "exclude_from_sim": False},
+                flags=flags,
             ))
 
     def _build_nets(self) -> None:
@@ -777,6 +894,12 @@ class CadenceXMLParser:
         self._nets = []
         seen_names: set[str] = set()
         code = 0
+
+        # Pre-build reverse index: net_name -> list of (ref, pin_name)
+        net_to_pins: dict[str, list[str]] = {}
+        for ref, pin_nets in self._pin_net_map.items():
+            for pin_name, net_name in pin_nets.items():
+                net_to_pins.setdefault(net_name, []).append(f"{ref}.{pin_name}")
 
         # Named nets from resolved mapping
         for net_data in self._nets_data:
@@ -804,11 +927,14 @@ class CadenceXMLParser:
             if net_data.wires:
                 pos = (float(net_data.wires[0].start_x), float(net_data.wires[0].start_y))
 
+            pins = net_to_pins.get(name, [])
             self._nets.append(SchematicNet(
                 name=name,
                 code=code,
                 type=net_type,
                 position=pos,
+                node_count=len(pins),
+                pins=pins,
             ))
             code += 1
 
@@ -816,11 +942,14 @@ class CadenceXMLParser:
         for glob in self._globals:
             if glob.name not in seen_names:
                 seen_names.add(glob.name)
+                pins = net_to_pins.get(glob.name, [])
                 self._nets.append(SchematicNet(
                     name=glob.name,
                     code=code,
                     type="power",
                     position=(float(glob.loc_x), float(glob.loc_y)),
+                    node_count=len(pins),
+                    pins=pins,
                 ))
                 code += 1
 
@@ -838,10 +967,14 @@ class CadenceXMLParser:
 
     # ---- Public interface (matches KiCad SchematicParser) ----
 
-    def get_components(self) -> list[SchematicComponent]:
-        """Get all components from the schematic."""
+    def get_components(self, include_dnp: bool = False) -> list[SchematicComponent]:
+        """Get components from the schematic.
+
+        Args:
+            include_dnp: If True, include DNP (do-not-populate) components.
+        """
         self._ensure_parsed()
-        return list(self._components)
+        return self._filter_dnp(self._components, include_dnp)
 
     def get_nets(self) -> list[SchematicNet]:
         """Get all nets from the schematic."""
@@ -890,8 +1023,13 @@ class CadenceXMLParser:
                 return comp
         return None
 
-    def search_components(self, pattern: str) -> list[SchematicComponent]:
-        """Search components by text pattern (matches reference, value, properties)."""
+    def search_components(self, pattern: str, include_dnp: bool = False) -> list[SchematicComponent]:
+        """Search components by text pattern (matches reference, value, properties).
+
+        Args:
+            pattern: Search pattern (case-insensitive).
+            include_dnp: If True, include DNP components in results.
+        """
         self._ensure_parsed()
         pattern_lower = pattern.lower()
         results = []
@@ -900,7 +1038,7 @@ class CadenceXMLParser:
                     pattern_lower in comp.value.lower() or
                     any(pattern_lower in v.lower() for v in comp.properties.values())):
                 results.append(comp)
-        return results
+        return self._filter_dnp(results, include_dnp)
 
     def get_component_connections(self, reference: str) -> dict[str, Any]:
         """Get pin-to-net connections for a component."""
@@ -975,11 +1113,17 @@ class CadenceXMLParser:
         self._ensure_parsed()
         return [p["name"] for p in self._pages]
 
-    def get_components_on_page(self, page_index: int) -> list[SchematicComponent]:
-        """Get components on a specific page."""
+    def get_components_on_page(self, page_index: int, include_dnp: bool = False) -> list[SchematicComponent]:
+        """Get components on a specific page.
+
+        Args:
+            page_index: Zero-based page index.
+            include_dnp: If True, include DNP components.
+        """
         self._ensure_parsed()
         page_refs = set()
         for part in self._parts:
             if part.page_index == page_index:
                 page_refs.add(part.reference.upper())
-        return [c for c in self._components if c.reference.upper() in page_refs]
+        page_components = [c for c in self._components if c.reference.upper() in page_refs]
+        return self._filter_dnp(page_components, include_dnp)

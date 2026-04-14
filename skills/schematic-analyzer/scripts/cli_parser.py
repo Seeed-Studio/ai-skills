@@ -37,9 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     cache_parser = subparsers.add_parser("cache", help="Cache maintenance")
     cache_parser.add_argument("schematic", help="Schematic file, project file, or project directory")
-    cache_parser.add_argument("--status", action="store_true", help="Show cache status")
     cache_parser.add_argument("--clear", action="store_true", help="Clear cache for the project")
-    cache_parser.add_argument("--force", action="store_true", help="Reserved destructive-action modifier")
     cache_parser.set_defaults(func=cmd_cache)
 
     return parser

@@ -12,6 +12,19 @@ from ..utils.file_handlers import validate_kicad_file
 KICAD_SYMBOL_FLAGS = ("dnp", "in_bom", "on_board", "exclude_from_sim")
 KICAD_FLAG_DEFAULTS = {"dnp": False, "in_bom": True, "on_board": True, "exclude_from_sim": False}
 
+# Distance/coordinate thresholds (millimetres)
+NEARBY_LABEL_DISTANCE_MM = 20.0
+NEARBY_COMPONENT_DISTANCE_MM = 15.0
+POINT_ON_SEGMENT_TOLERANCE = 0.05
+WIRE_TRACE_MAX_TOLERANCE_MM = 20.0
+LABEL_MATCH_TOLERANCE_MM = 5.0
+POWER_SYMBOL_TOLERANCE_MM = 15.0
+JUNCTION_MATCH_TOLERANCE = 0.01
+
+# Parsing limits
+MAX_SYMBOL_BLOCK_LINES = 500
+BFS_TRACE_MAX_DEPTH = 20
+NEARBY_RESULTS_LIMIT = 10
 
 @dataclass
 class SchematicComponent:
@@ -316,7 +329,7 @@ class SchematicParser:
                     if depth == 0 and len(sym_lines) > 1:
                         break
                     j += 1
-                    if j - li > 500:
+                    if j - li > MAX_SYMBOL_BLOCK_LINES:
                         break
                 sym_block = '\n'.join(sym_lines)
 
@@ -387,7 +400,7 @@ class SchematicParser:
 
             lib_id = lib_id_match.group(1)
 
-            at_match = re.search(r'^\s*\(at\s+([\d.]+)\s+([\d.]+)\s+(\d+)\)', block_text, re.MULTILINE)
+            at_match = re.search(r'^\s*\(at\s+([\d.]+)\s+([\d.]+)(?:\s+(\d+))?\)', block_text, re.MULTILINE)
             if at_match:
                 x = float(at_match.group(1))
                 y = float(at_match.group(2))
@@ -582,7 +595,7 @@ class SchematicParser:
         point: tuple[float, float],
         segment: tuple[tuple[float, float], tuple[float, float]],
         *,
-        tolerance: float = 0.05,
+        tolerance: float = POINT_ON_SEGMENT_TOLERANCE,
     ) -> bool:
         """Return whether a point lies on a wire segment within a small tolerance."""
         (x, y) = point
@@ -970,7 +983,7 @@ class SchematicParser:
             labels.append({"name": label_name, "position": (lx, ly), "distance": dist})
 
         # Filter to nearby labels (within 20mm)
-        nearby_labels = [l for l in labels if l["distance"] < 20]
+        nearby_labels = [l for l in labels if l["distance"] < NEARBY_LABEL_DISTANCE_MM]
 
         # Find nearby components (within 15mm)
         components = self.get_components()
@@ -979,7 +992,7 @@ class SchematicParser:
             if c.reference == reference:
                 continue
             dist = ((c.position[0] - cx)**2 + (c.position[1] - cy)**2)**0.5
-            if dist < 15:
+            if dist < NEARBY_COMPONENT_DISTANCE_MM:
                 nearby_comps.append({
                     "reference": c.reference,
                     "value": c.value,
@@ -991,8 +1004,8 @@ class SchematicParser:
             "component": reference,
             "position": comp.position,
             "pins": pins,
-            "nearby_labels": nearby_labels[:10],
-            "nearby_components": nearby_comps[:10],
+            "nearby_labels": nearby_labels[:NEARBY_RESULTS_LIMIT],
+            "nearby_components": nearby_comps[:NEARBY_RESULTS_LIMIT],
         }
 
     def trace_net(self, reference: str, pin_number: Optional[str] = None) -> dict[str, Any]:
@@ -1028,7 +1041,7 @@ class SchematicParser:
             "component": reference,
             "position": connections["position"],
             "inferred_connections": inferred_nets,
-            "nearby_components": connections["nearby_components"][:5],
+            "nearby_components": connections["nearby_components"][:NEARBY_RESULTS_LIMIT],
         }
 
     def build_wire_network(self) -> dict[tuple[float, float], list[tuple[float, float]]]:
@@ -1069,7 +1082,7 @@ class SchematicParser:
 
             # For a junction, all wires meeting at this point should be connected
             # Find all wire endpoints at this position (with small tolerance)
-            tolerance = 0.01  # 0.01mm tolerance
+            tolerance = JUNCTION_MATCH_TOLERANCE
             connected_points = [p for p in network if
                                abs(p[0] - jx) < tolerance and abs(p[1] - jy) < tolerance]
 
@@ -1083,7 +1096,7 @@ class SchematicParser:
 
         return network
 
-    def trace_wire_network(self, reference: str, max_depth: int = 20) -> dict[str, Any]:
+    def trace_wire_network(self, reference: str, max_depth: int = BFS_TRACE_MAX_DEPTH) -> dict[str, Any]:
         """Trace wire connections from a component.
 
         Args:
@@ -1131,7 +1144,7 @@ class SchematicParser:
         all_labels = h_labels + g_labels
 
         # Start from component position and trace
-        max_tolerance = 20.0  # 20mm max tolerance (for components with pin offset)
+        max_tolerance = WIRE_TRACE_MAX_TOLERANCE_MM  # for components with pin offset
         start_point = None
         min_dist = float('inf')
 
@@ -1167,7 +1180,7 @@ class SchematicParser:
             trace_path.append(point)
 
             # Check if this point is near a label
-            label_tolerance = 5.0  # 5mm tolerance for label matching
+            label_tolerance = LABEL_MATCH_TOLERANCE_MM
             for label in all_labels:
                 lx, ly = label["position"]
                 dist = ((point[0] - lx)**2 + (point[1] - ly)**2)**0.5
@@ -1185,7 +1198,7 @@ class SchematicParser:
                         queue.append(neighbor)
 
         # Find nearby power symbols
-        power_tolerance = 15.0  # 15mm tolerance for power symbols
+        power_tolerance = POWER_SYMBOL_TOLERANCE_MM
         power_pattern = r'\(symbol\s+\(lib_id\s+"power:([^"]+)"[\s\S]*?\(at\s+([\d.]+)\s+([\d.]+)'
         for match in re.finditer(power_pattern, content):
             power_name = match.group(1)

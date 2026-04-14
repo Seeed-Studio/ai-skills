@@ -118,7 +118,10 @@ class ProjectIndexer:
 
         for record in self._build_sheet_records(scope):
             parser = get_schematic_parser(str(record.file_path), include_child_sheets=False)
-            local_components = parser.get_components()
+            try:
+                local_components = parser.get_components(include_dnp=True)
+            except TypeError:
+                local_components = parser.get_components()
             hierarchy.append(
                 SheetInfo(
                     sheet_name=record.sheet_name,
@@ -169,14 +172,14 @@ class ProjectIndexer:
         return ProjectIndex(
             scope=scope,
             components=components,
-            nets={},
+            nets={},  # TODO: populate from ConnectivityBuilder when integrated
             hierarchy=hierarchy,
             resolver=InstanceResolver({ref: [ref] for ref in sorted(components)}),
             sheet_name_to_path=sheet_name_to_path,
             statistics=IndexStatistics(
                 total_components=len(components),
                 total_sheets=len(hierarchy),
-                duplicate_reference_count=0,
+                duplicate_reference_count=0,  # TODO: compute from actual instance resolution
             ),
         )
 

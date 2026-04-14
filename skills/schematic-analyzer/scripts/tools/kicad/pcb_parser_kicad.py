@@ -105,7 +105,7 @@ class PCBParserKiCad:
                     value = fp.GetProperty(key)
                     if value:
                         properties[key] = value
-                except:
+                except Exception:
                     pass
 
             footprints.append(PCBFootprint(
@@ -136,7 +136,7 @@ class PCBParserKiCad:
         nets_dict = net_info_list.NetsByName()
         for net_name, net in nets_dict.items():
             name = str(net_name)
-            if name and name not in ["", "GND", "0"]:  # Skip empty/GND nets
+            if name and name != "":  # Skip empty net names
                 nets.append(PCBNet(
                     name=name,
                     code=net.GetNetCode(),

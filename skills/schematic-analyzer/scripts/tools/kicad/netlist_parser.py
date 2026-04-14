@@ -72,7 +72,12 @@ class NetlistParser:
         if self._data is not None:
             return self._data
 
-        tree = ET.parse(self.file_path)
+        try:
+            tree = ET.parse(self.file_path)
+        except ET.ParseError as exc:
+            raise ValueError(
+                f"Failed to parse KiCad netlist file '{self.file_path}': {exc}"
+            ) from exc
         root = tree.getroot()
 
         # Parse components (KiCad 9.0 uses <comp> not <component>)
@@ -110,8 +115,13 @@ class NetlistParser:
         nets: dict[str, NetlistNet] = {}
         warnings: list[str] = []
         for net in root.findall(".//net"):
-            code = int(net.get("code"))
+            try:
+                code = int(net.get("code", "0"))
+            except (ValueError, TypeError):
+                code = 0
             name = net.get("name")
+            if not name:
+                continue
 
             pins_list = []
             for node in net.findall("node"):
@@ -134,21 +144,6 @@ class NetlistParser:
         }
 
         return self._data
-
-    def _get_net_name(self, root: ET.Element, net_code: str) -> str:
-        """Get net name from net code.
-
-        Args:
-            root: XML root element
-            net_code: Net code string (e.g., "3")
-
-        Returns:
-            Net name
-        """
-        net_elem = root.find(f".//net[@code='{net_code}']")
-        if net_elem is not None:
-            return net_elem.get("name", f"net_{net_code}")
-        return f"net_{net_code}"
 
     def get_components(self) -> dict[str, NetlistComponent]:
         """Get all components from netlist.
