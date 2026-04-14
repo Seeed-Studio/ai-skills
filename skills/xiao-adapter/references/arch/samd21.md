@@ -166,7 +166,15 @@ SAMD21 ADC channels are **not sequential** with pin numbers:
 
 Use `ADC_Channel<x>` (e.g., `ADC_Channel0`) for the `ulPinMode` field in PinDescription.
 
-## Upload / Debug
+## MicroPython
+
+- **Port**: `lib/micropython/ports/stm32` (shared ARM Cortex-M port)
+- **Config style**: Traditional (`mpconfigboard.h`, `mpconfigboard.mk`, `pins.csv`)
+- **Pin naming**: `PAxx` (e.g., `PA10`, `PA02`)
+- **Flash**: bossac (UF2 bootloader), OpenOCD (SWD)
+- **Toolchain**: `gcc-arm-none-eabi`
+
+SAMD21 does not yet have MicroPython support in Seeed's repo. The stm32 port can be used as a base but requires implementing SAMD21-specific clock, flash, and peripheral drivers.
 
 | Method | Tool | Command |
 |---|---|---|

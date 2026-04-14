@@ -2,332 +2,325 @@
 
 ## Table of Contents
 
-1. [Port Selection](#1-port-selection)
-2. [Directory Structure](#2-directory-structure)
-3. [Core Configuration Files](#3-core-configuration-files)
+1. [Repository Setup](#1-repository-setup)
+2. [Port Selection](#2-port-selection)
+3. [Board Config Files](#3-board-config-files)
 4. [Pin Definition](#4-pin-definition)
-5. [Board Initialization](#5-board-initialization)
-6. [Build and Flash](#6-build-and-flash)
-7. [Automated Testing with pyboard](#7-automated-testing-with-pyboard)
-8. [Common Issues](#8-common-issues)
+5. [Build and Flash](#5-build-and-flash)
+6. [Testing with pyboard](#6-testing-with-pyboard)
+7. [Common Issues](#7-common-issues)
 
 ---
 
-## 1. Port Selection
+## 1. Repository Setup
 
-Choose the closest existing port in `micropython/ports/` as the base:
-
-| Architecture | Port Directory | Architecture Reference |
-|---|---|---|
-| ARM Cortex-M (STM32, GD32, ATSAM) | `ports/stm32/` | [arch/stm32.md](arch/stm32.md), [arch/samd21.md](arch/samd21.md) |
-| Nordic nRF52 | `ports/nrf/` | [arch/nrf52.md](arch/nrf52.md) |
-| ESP32 Xtensa | `ports/esp32/` | [arch/esp32.md](arch/esp32.md) |
-| RP2040 ARM | `ports/rp2/` | [arch/rp2040.md](arch/rp2040.md) |
-| RISC-V | `ports/rp2/` (multi-arch) | Consult vendor docs |
-
-Clone MicroPython:
+Seeed maintains a wrapper repository with MicroPython as a submodule:
 
 ```bash
-git clone https://github.com/micropython/micropython.git
-cd micropython
+git clone https://github.com/Seeed-Studio/micropython-seeed-boards.git
+cd micropython-seeed-boards
 git submodule update --init --recursive
 ```
 
-## 2. Directory Structure
-
-Board-specific files to create/modify:
+Repository structure:
 
 ```
-micropython/
-├── ports/<port>/
-│   ├── boards/
-│   │   └── SEEED_XIAO_<CHIP>/         # NEW: Board directory
-│   │       ├── board.json              # Board descriptor
-│   │       ├── manifest.py             # Freeze modules list
-│   │       ├── mpconfigboard.h         # Board-level config
-│   │       ├── mpconfigboard.mk        # Build variables
-│   │       ├── pins.csv                # Pin mapping table
-│   │       └── board_init.c            # Board init code (if needed)
-│   ├── mpconfigport.h                  # Port-level defaults
-│   └── Makefile                        # Build system
+micropython-seeed-boards/
+├── boards/                          # Board configurations
+│   ├── seeed/                       # Full board definitions (Zephyr, Renesas)
+│   │   ├── xiao_nrf54l15/          # Zephyr board port (DTS, defconfig, board.yml)
+│   │   └── xiao_ra4m1/             # Renesas RA board (mpconfigboard.h, pins.csv)
+│   ├── xiao_mg24.conf              # Flat Kconfig overlay (Zephyr)
+│   ├── xiao_mg24.overlay           # Flat device tree overlay (Zephyr)
+│   └── pm_static_xiao_*.yml        # Memory partition maps (Zephyr)
+├── lib/
+│   └── micropython/                 # Upstream MicroPython (submodule)
+│       └── ports/
+│           ├── zephyr/              # Zephyr RTOS port
+│           ├── esp32/               # ESP-IDF port
+│           ├── renesas-ra/          # Renesas RA port
+│           ├── stm32/               # STM32/shared ARM Cortex-M port
+│           └── rp2/                 # RP2040 port
+├── src/cmodules/                    # Custom C modules (modadc, modrtc, etc.)
+├── tools/                           # Board-specific flash tools
+└── example/                         # Example scripts
 ```
 
-## 3. Core Configuration Files
+## 2. Port Selection
 
-### mpconfigboard.h
+MicroPython supports XIAO boards through multiple ports, each with different config styles:
 
-Board-level MicroPython configuration:
+| Architecture | MicroPython Port | Config Style | Board Dir | Architecture Reference |
+|---|---|---|---|---|
+| nRF54L15 / nRF52840 / MG24 | Zephyr | `.conf` + `.overlay` + Zephyr board port | `boards/seeed/xiao_*/` | [arch/nrf52.md](arch/nrf52.md) |
+| ESP32-C3/C6/S3 | ESP-IDF | Traditional | `boards/seeed/xiao_esp32*/` | [arch/esp32.md](arch/esp32.md) |
+| RA4M1 | renesas-ra | Traditional | `boards/seeed/xiao_ra4m1/` | [arch/stm32.md](arch/stm32.md) |
+| SAMD21 | stm32 | Traditional | `boards/seeed/xiao_samd*/` | [arch/samd21.md](arch/samd21.md) |
+| RP2040 | rp2 | CMake | `boards/seeed/xiao_rp2040/` | [arch/rp2040.md](arch/rp2040.md) |
+
+> **Important**: Architecture reference files contain MicroPython-specific sections with pin naming, flash tools, and port-specific notes.
+
+## 3. Board Config Files
+
+### Track A: Zephyr (nRF54L15, MG24, nRF52840)
+
+Zephyr boards use **two sets of files**: a full Zephyr board port under `boards/seeed/<board>/` plus MicroPython-specific overlay/conf files in the flat `boards/` directory.
+
+**Full Zephyr board port** (`boards/seeed/xiao_<board>/`):
+
+| File | Purpose |
+|---|---|
+| `board.yml` | Board metadata (name, vendor, SoC) |
+| `board.cmake` | Flash runner config |
+| `<board>_<soc>_<cpu>.dts` | Main device tree file |
+| `<board>_common.dtsi` | Shared device tree include (LEDs, buttons, peripherals) |
+| `<board>-pinctrl.dtsi` | Pin control definitions |
+| `seeed_xiao_connector.dtsi` | XIAO connector GPIO map (D0-D15) |
+| `<board>_<soc>_<cpu>_defconfig` | Zephyr defconfig |
+| `Kconfig.defconfig` | Conditional Kconfig defaults |
+
+**MicroPython overlay files** (flat in `boards/`):
+
+| File | Purpose |
+|---|---|
+| `xiao_<board>_<soc>_<cpu>.conf` | Kconfig overrides for MicroPython (BT, flash, filesystem, etc.) |
+| `xiao_<board>_<soc>_<cpu>.overlay` | Device tree overlay (RTC, ADC channels, PWM, filesystem) |
+| `pm_static_xiao_<board>_*.yml` | Static memory partition map |
+
+Example `board.yml`:
+```yaml
+board:
+  name: xiao_nrf54l15
+  full_name: XIAO NRF54L15
+  vendor: seeed
+  socs:
+  - name: nrf54l15
+    variants:
+    - name: xip
+      cpucluster: cpuflpr
+```
+
+Example `.conf` snippet:
+```
+CONFIG_SPI=y
+CONFIG_ADC=y
+CONFIG_PWM=y
+CONFIG_BT=y
+CONFIG_FLASH=y
+CONFIG_FLASH_MAP=y
+CONFIG_FILE_SYSTEM=y
+CONFIG_FILE_SYSTEM_LITTLEFS=y
+```
+
+Example `.overlay` snippet:
+```dts
+/ {
+    zephyr,user {
+        io-channels = <&adc 0>, <&adc 1>, <&adc 2>;
+    };
+};
+&xiao_i2c {
+    status = "okay";
+};
+```
+
+### Track B: Traditional (ESP32, RA4M1, SAMD21, STM32)
+
+Traditional boards use MicroPython's native board config format under `boards/seeed/xiao_<board>/`:
+
+| File | Purpose |
+|---|---|
+| `mpconfigboard.h` | Board-level MicroPython C config |
+| `mpconfigboard.mk` | Build variables |
+| `pins.csv` | Pin name mapping |
+| `manifest.py` | Frozen module manifest |
+| `board.json` | Board metadata |
+| `<board>.ld` | Linker script (optional, port-dependent) |
+
+#### mpconfigboard.h
 
 ```c
-// Seeed XIAO <Chip Name> board configuration
-#define MICROPY_HW_BOARD_NAME       "Seeed XIAO <Chip>"
+#define MICROPY_HW_BOARD_NAME       "SEEED_XIAO_<CHIP>"
 #define MICROPY_HW_MCU_NAME         "<MCU_NAME>"
-#define MICROPY_HW_FLASH_FS_LABEL   "XIAO"
+#define MICROPY_HW_MCU_SYSCLK       <FREQ>
+#define MICROPY_HW_MCU_PCLK         <FREQ>
 
-// Flash and RAM configuration
-#define MICROPY_HW_FLASH_STORAGE_SIZE      (FLASH_SIZE - 0x4000)  // Reserve space
-#define MICROPY_HW_FLASH_STORAGE_BASE      0x08000000             // Adjust per MCU
-#define MICROPY_HW_FLASH_STORAGE_ALIGNMENT  512
+// UART
+#define MICROPY_HW_UART0_TX        (pin_<TX_PIN>)
+#define MICROPY_HW_UART0_RX        (pin_<RX_PIN>)
 
-// UART configuration
-#define MICROPY_HW_UART0_TX        <TX_PIN>
-#define MICROPY_HW_UART0_RX        <RX_PIN>
-#define MICROPY_HW_UART0_BAUDRATE  115200
+// I2C
+#define MICROPY_HW_I2C0_SCL        (pin_<SCL_PIN>)
+#define MICROPY_HW_I2C0_SDA        (pin_<SDA_PIN>)
 
-// I2C configuration
-#define MICROPY_HW_I2C0_SCL        <SCL_PIN>
-#define MICROPY_HW_I2C0_SDA        <SDA_PIN>
+// SPI
+#define MICROPY_HW_SPI0_SCK        (pin_<SCK_PIN>)
+#define MICROPY_HW_SPI0_MOSI       (pin_<MOSI_PIN>)
+#define MICROPY_HW_SPI0_MISO       (pin_<MISO_PIN>)
 
-// SPI configuration
-#define MICROPY_HW_SPI0_SCK        <SCK_PIN>
-#define MICROPY_HW_SPI0_MOSI       <MOSI_PIN>
-#define MICROPY_HW_SPI0_MISO       <MISO_PIN>
+// LED (active LOW on most XIAO boards)
+#define MICROPY_HW_LED1             (pin_<LED_PIN>)
+#define MICROPY_HW_LED_ON(pin)      mp_hal_pin_low(pin)
+#define MICROPY_HW_LED_OFF(pin)     mp_hal_pin_high(pin)
 
-// LED
-#define MICROPY_HW_LED1            <LED_PIN>           // Active LOW on XIAO
-#define MICROPY_HW_LED_PULLUP      1                   // Enable pull-up
+// USB
+#define MICROPY_HW_USB_VID         <USER_PROVIDED_VID>
+#define MICROPY_HW_USB_PID         <USER_PROVIDED_PID>
+#define MICROPY_HW_USB_CDC         (1)
+#define MICROPY_HW_ENABLE_USBDEV   (1)
 
-// USB configuration (if USB-capable MCU)
-// IMPORTANT: VID/PID must be applied from Seeed internal team, never fabricate values
-// Ask user to contact the responsible internal team for official VID/PID assignment
-#define MICROPY_HW_USB_VID         <USER_PROVIDED_VID> // e.g. 0x2886 (Seeed VID)
-#define MICROPY_HW_USB_PID         <USER_PROVIDED_PID> // Unique PID per board variant
-#define MICROPY_HW_USB_CDC         (1)                 // Enable USB CDC
-
-// Enable/disable features
-#define MICROPY_HW_ENABLE_UART     (1)
-#define MICROPY_HW_ENABLE_SPI      (1)
-#define MICROPY_HW_ENABLE_I2C      (1)
-#define MICROPY_HW_ENABLE_ADC      (1)
-#define MICROPY_HW_ENABLE_DAC      (0)                 // If no DAC on MCU
-#define MICROPY_HW_ENABLE_CAN      (0)                 // If no CAN on MCU
-#define MICROPY_HW_ENABLE_USB      (1)                 // If USB on MCU
+// Feature enables
+#define MICROPY_HW_ENABLE_RTC       (1)
+#define MICROPY_HW_ENABLE_ADC       (1)
+#define MICROPY_HW_HAS_FLASH        (1)
+#define MICROPY_HW_ENABLE_INTERNAL_FLASH_STORAGE (1)
 ```
 
-### mpconfigboard.mk
-
-Build variables for the board:
+#### mpconfigboard.mk
 
 ```makefile
-# Seeed XIAO <Chip> build configuration
-MCU_SERIES = <mcu_series>
-CMSIS_MCU = <cmsis_mcu>
-AF_FILE = boards/<mcu_series>_af.csv
-LD_FILES = boards/<mcu_series>_ld.ld
+CMSIS_MCU = <MCU>
+MCU_SERIES = <series>
+LD_FILES = boards/<board>/<board>.ld
 
-# MicroPython feature flags
-MICROPY_PY_BLUETOOTH = 0
-MICROPY_PY_NETWORK = 0
-MICROPY_PY_USOCKET = 0
-MICROPY_PY_WEBREPL = 1
-MICROPY_PY_UJSON = 1
-MICROPY_PY_URE = 1
-MICROPY_PY_UHEAPQ = 1
-MICROPY_PY_UTIMEQ = 1
-MICROPY_PY_UHASHLIB = 1
-MICROPY_PY_UCRYPTOLIB = 0
-MICROPY_PY_UCTYPES = 1
-MICROPY_PY_UZLIB = 1
-MICROPY_PY_UASYNCIO = 1
-MICROPY_PY_FRAMEBUF = 1
+MICROPY_VFS_LFS2 = 0
 MICROPY_VFS_FAT = 1
 
-# Freeze modules (files to embed in firmware)
-FROZEN_MANIFEST = $(BOARD_DIR)/manifest.py
+FROZEN_MANIFEST ?= $(BOARD_DIR)/manifest.py
 ```
 
-### manifest.py
-
-Define which Python modules to freeze into firmware:
+#### manifest.py
 
 ```python
-# manifest.py for Seeed XIAO <Chip>
+include("$(MPY_DIR)/extmod/asyncio")
+```
 
-freeze("$(PORT_DIR)/modules")
+#### board.json
+
+```json
+{
+    "deploy": ["../deploy.md"],
+    "mcu": "<mcu>",
+    "product": "seeed-xiao_<board>",
+    "url": "https://wiki.seeedstudio.com/XIAO_<CHIP>/",
+    "vendor": "Seeed Studio"
+}
 ```
 
 ## 4. Pin Definition
 
-### pins.csv Format
+### Traditional: pins.csv
+
+Format: `logical_name,cpu_pin`
 
 ```
-# XIAO <Chip> pin mapping
-# Format: board_pin, pin_name, pin_function
-D0, <MCU_PIN_D0>, GPIO
-D1, <MCU_PIN_D1>, GPIO
-D2, <MCU_PIN_D2>, GPIO
-D3, <MCU_PIN_D3>, GPIO
-D4, <MCU_PIN_D4>, GPIO
-D5, <MCU_PIN_D5>, GPIO
-D6, <MCU_PIN_D6>, GPIO
-D7, <MCU_PIN_D7>, GPIO
-D8, <MCU_PIN_D8>, GPIO
-D9, <MCU_PIN_D9>, GPIO
-D10, <MCU_PIN_D10>, GPIO
-LED, <MCU_PIN_LED>, GPIO
+D0,<MCU_PIN_D0>
+D1,<MCU_PIN_D1>
+D2,<MCU_PIN_D2>
+D3,<MCU_PIN_D3>
+D4,<MCU_PIN_D4>
+D5,<MCU_PIN_D5>
+D6,<MCU_PIN_D6>
+D7,<MCU_PIN_D7>
+D8,<MCU_PIN_D8>
+D9,<MCU_PIN_D9>
+D10,<MCU_PIN_D10>
+LED,<MCU_PIN_LED>
 ```
 
-### Pin naming conventions
+Pin naming is architecture-specific — see [architecture reference](arch/) for the correct format (e.g., `PA10` for SAMD21/STM32, `P302` for RA4M1, `GPIO5` for ESP32).
 
-- **board_pin**: The name exposed to MicroPython users (e.g., `D0`, `LED`)
-- **pin_name**: The MCU port/pin (e.g., `PA10`, `GPIO0`) — see [architecture reference](arch/) for naming format
-- **pin_function**: Always `GPIO` for basic pins; some ports support `ALT` for alternate functions
+### Zephyr: Device tree overlay
 
-## 5. Board Initialization
+Pins are defined in the device tree files (`.dts`/`.dtsi`) using Zephyr's pin control (`pinctrl`) bindings. See the `xiao_nrf54l15` board for a complete example.
 
-### board_init.c
+## 5. Build and Flash
 
-Custom board initialization (optional, only if non-default init is needed):
-
-```c
-#include <stdint.h>
-#include "py/mphal.h"
-#include "board_init.h"
-
-// Called early in startup, before Python runtime
-void board_early_init(void) {
-    // Example: configure external oscillator
-    // Example: set up debug UART pins
-    // Example: configure USB D+ pull-up
-}
-
-// Called after Python runtime is initialized
-void board_init(void) {
-    // Example: initialize onboard sensors
-    // Example: configure RGB LED controller
-    // Example: set up power management IC
-}
-
-// Called before entering low-power mode
-void board_sleep_prepare(void) {
-    // Example: turn off unnecessary peripherals
-    // Example: configure wake-up sources
-}
-```
-
-### board.json (for newer MicroPython versions)
-
-```json
-{
-  "build": {
-    "board_name": "SEEED_XIAO_<CHIP>",
-    "mcu": "<MCU_NAME>",
-    "f_cpu": "<CLOCK_FREQ>",
-    "ram_size": <RAM_BYTES>,
-    "flash_size": <FLASH_BYTES>
-  },
-  "id": "seeed_xiao_<chip>",
-  "name": "Seeed XIAO <Chip Name>",
-  "vendor": "Seeed Studio",
-  "url": "https://wiki.seeedstudio.com/XIAO_<CHIP>/",
-  "usb_pid": "<USER_PROVIDED_PID>"  // Must apply from Seeed internal team
-}
-```
-
-## 6. Build and Flash
-
-### Prerequisites
+### Zephyr build
 
 ```bash
-# Install required tools (Debian/Ubuntu)
-sudo apt install build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi \
-                 python3 python3-pip git wget
+cd micropython-seeed-boards
+export PROJECT_DIR=$(pwd)
+
+# nRF54L15 example
+west build ./lib/micropython/ports/zephyr --pristine \
+  --board xiao_nrf54l15/nrf54l15/cpuapp --sysbuild -- \
+  -DBOARD_ROOT=$PROJECT_DIR/ \
+  -DEXTRA_DTC_OVERLAY_FILE=$PROJECT_DIR/boards/xiao_nrf54l15_nrf54l15_cpuapp.overlay \
+  -DPM_STATIC_YML_FILE=$PROJECT_DIR/boards/pm_static_xiao_nrf54l15_nrf54l15_cpuapp.yml \
+  -DEXTRA_CONF_FILE=$PROJECT_DIR/boards/xiao_nrf54l15_nrf54l15_cpuapp.conf
+
+# MG24 example (uses upstream Zephyr board definition)
+west build ./lib/micropython/ports/zephyr --pristine \
+  --board xiao_mg24 -- \
+  -DCONF_FILE=$PROJECT_DIR/boards/xiao_mg24.conf \
+  -DEXTRA_DTC_OVERLAY_FILE=$PROJECT_DIR/boards/xiao_mg24.overlay
 ```
 
-> For ESP32 port, also install: `python3-venv ccache`
-> For RP2 port, also install: `cmake gcc-arm-none-eabi libnewlib-arm-none-eabi`
-
-### Build
+### Traditional build (Renesas RA, STM32, SAMD21)
 
 ```bash
-cd micropython/ports/<port>
+cd micropython-seeed-boards
 
-# Submodule update (first time)
-make submodules
+# Renesas RA
+make -C lib/micropython/ports/renesas-ra BOARD_DIR=../../../../boards/seeed/xiao_ra4m1
 
-# Build for XIAO board
-make BOARD=SEEED_XIAO_<CHIP>
+# STM32 / SAMD21
+make -C lib/micropython/ports/stm32 BOARD_DIR=../../../../boards/seeed/xiao_<board>
 ```
-
-Output firmware files are typically in `build-SEEED_XIAO_<CHIP>/`:
-- `firmware.hex` — Intel HEX format
-- `firmware.bin` — Raw binary
-- `firmware.uf2` — UF2 format (RP2040)
 
 ### Flash
 
-Use the upload method appropriate for the target architecture. See the [architecture reference](arch/) for specific commands:
+Flash tools are provided in `tools/` per board. See the architecture reference for specific commands.
 
-| Architecture | Typical Method |
-|---|---|
-| STM32 / SAMD | OpenOCD or STM32CubeProgrammer |
-| ESP32 | esptool |
-| RP2040 | picotool or UF2 drag-and-drop |
-| nRF52 | nrfjprog or DFU |
+| Architecture | Method | Tool |
+|---|---|---|
+| nRF54L15 | nrfjprog / OpenOCD | `tools/xiao_nrf54l15_flash/` |
+| MG24 | SLC CLI / J-Link | `tools/xiao_mg24_flash/` |
+| RA4M1 | USB DFU / J-Link | `tools/xiao_ra4m1_flash/` |
+| ESP32 | esptool | `esptool.py --port /dev/ttyUSB0 write_flash 0x0 firmware.bin` |
+| RP2040 | UF2 drag-and-drop / picotool | `picotool load firmware.uf2` |
+| SAMD21 | bossac / UF2 | `bossac -i -d -U true -i -e -w -v firmware.bin -R` |
 
-## 7. Automated Testing with pyboard
+## 6. Testing with pyboard
 
-### Setup pyboard.py
+### Setup
 
 ```bash
 pip install pyserial
-# pyboard.py is in micropython/tools/
-export PATH=$PATH:/path/to/micropython/tools
+export PATH=$PATH:micropython-seeed-boards/lib/micropython/tools
 ```
 
-### Run test script remotely
-
-Create `test_xiao.py`:
+### Test script
 
 ```python
-# test_xiao.py - Automated hardware test for XIAO
-import machine, time, sys
+# test_xiao.py
+import machine, time
 
 def test_led():
-    """Test onboard LED toggle"""
     led = machine.Pin("LED", machine.Pin.OUT)
     for i in range(5):
         led.value(not led.value())
         time.sleep(0.5)
     print("PASS: LED toggle")
 
-def test_uart():
-    """Test UART echo"""
-    uart = machine.UART(0, baudrate=115200)
-    uart.write("XIAO UART Test\n")
-    print("PASS: UART TX")
-
 def test_gpio():
-    """Test GPIO input with pull-up"""
     pin = machine.Pin("D0", machine.Pin.IN, machine.Pin.PULL_UP)
-    val = pin.value()
-    print(f"D0 state: {val}")
+    print(f"D0 state: {pin.value()}")
     print("PASS: GPIO input")
 
 def test_i2c():
-    """Test I2C bus scan"""
     i2c = machine.I2C(0)
     devices = i2c.scan()
-    print(f"I2C devices found: {[hex(d) for d in devices]}")
+    print(f"I2C devices: {[hex(d) for d in devices]}")
     print("PASS: I2C scan")
 
-def test_spi():
-    """Test SPI loopback"""
-    spi = machine.SPI(0, mode=0)
-    spi.init(baudrate=1000000)
-    result = spi.write_readbytes(b"\xAB\xCD", 2)
-    print(f"SPI loopback: {result}")
-    print("PASS: SPI loopback")
-
 def test_adc():
-    """Test ADC reading"""
     adc = machine.ADC(machine.Pin("D0"))
-    val = adc.read_u16()
-    print(f"ADC D0 raw: {val}")
+    print(f"ADC raw: {adc.read_u16()}")
     print("PASS: ADC read")
 
 def test_pwm():
-    """Test PWM output"""
     pwm = machine.PWM(machine.Pin("LED"))
     pwm.freq(1000)
     for duty in range(0, 1024, 128):
@@ -337,9 +330,8 @@ def test_pwm():
     print("PASS: PWM output")
 
 # Run all tests
-tests = [test_led, test_uart, test_gpio, test_i2c, test_spi, test_adc, test_pwm]
-passed = 0
-failed = 0
+tests = [test_led, test_gpio, test_i2c, test_adc, test_pwm]
+passed = failed = 0
 for t in tests:
     try:
         t()
@@ -347,31 +339,25 @@ for t in tests:
     except Exception as e:
         print(f"FAIL: {t.__name__} - {e}")
         failed += 1
-
 print(f"\nResults: {passed} passed, {failed} failed")
 ```
 
-### Execute via pyboard.py
+### Execute
 
 ```bash
-# Run test script on connected board
 pyboard.py --device /dev/ttyACM0 test_xiao.py
-
-# Run interactive commands
-pyboard.py --device /dev/ttyACM0 -c "import machine; print(machine.Pin('LED', machine.Pin.OUT))"
-
-# Enter REPL
-pyboard.py --device /dev/ttyACM0 -c "import micropython; micropython.kbd_intr(); import repl; repl.enter()"
 ```
 
-## 8. Common Issues
+## 7. Common Issues
 
 | Problem | Cause | Solution |
 |---|---|---|
-| `OSError: couldn't find board` | Board dir not found | Ensure `boards/SEEED_XIAO_<CHIP>/` exists with correct `mpconfigboard.mk` |
-| Boot loop after flash | Wrong flash offset or corrupt firmware | Erase flash completely, check flash base address |
-| `pins.csv` parse error | Wrong pin format | Ensure format is `board_pin, pin_name, pin_function` with no trailing spaces |
-| USB not enumerated | Wrong VID/PID or USB not configured | Check `MICROPY_HW_USB_VID/PID` and USB pin config |
-| I2C scan returns nothing | Wrong SDA/SCL pins | Verify pins match schematic and MCU's I2C peripheral pins |
-| Firmware too large | Exceeded flash with frozen modules | Reduce `FROZEN_MANIFEST` or increase `MICROPY_HW_FLASH_STORAGE_SIZE` |
-| `ImportError: no module` | Feature not enabled | Enable in `mpconfigboard.mk` (e.g., `MICROPY_PY_UJSON = 1`) |
+| `west build` fails: board not found | Missing `BOARD_ROOT` flag | Add `-DBOARD_ROOT=$PROJECT_DIR/` to west build command |
+| `OSError: couldn't find board` | Board dir not found | Ensure `boards/seeed/xiao_<board>/` exists with correct files |
+| Boot loop after flash | Wrong flash offset | Erase flash completely, check partition map in `.yml` |
+| `pins.csv` parse error | Wrong format | Format is `logical_name,cpu_pin` with no header |
+| USB not enumerated | Wrong VID/PID | Check `MICROPY_HW_USB_VID/PID` — must be real Seeed-assigned values |
+| I2C scan returns nothing | Wrong SDA/SCL pins | Verify pins match schematic and MCU's I2C peripheral |
+| Firmware too large | Too many frozen modules | Reduce `manifest.py` or adjust flash partition map |
+| Zephyr Kconfig not applied | Missing `.conf` file | Add `-DEXTRA_CONF_FILE=...` or `-DCONF_FILE=...` to west build |
+| Device tree overlay not applied | Missing overlay flag | Add `-DEXTRA_DTC_OVERLAY_FILE=...` to west build |

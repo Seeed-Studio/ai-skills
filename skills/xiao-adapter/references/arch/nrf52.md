@@ -44,7 +44,16 @@ The nRF528x Arduino core is mbed-based:
 // ... standard defines
 ```
 
-## Upload / Debug
+## MicroPython
+
+- **Port**: `lib/micropython/ports/zephyr` (Zephyr RTOS based)
+- **Config style**: Zephyr (`.conf` + `.overlay` + `board.yml` + device tree files)
+- **Pin naming**: `P0.xx` (e.g., `P0.02`, `P0.28`) in device tree
+- **Flash**: nrfjprog, OpenOCD, or DFU via adafruit-nrfutil
+- **Toolchain**: Zephyr SDK (includes `arm-none-eabi-gcc`)
+- **Build**: `west build ./lib/micropython/ports/zephyr --pristine --board <board>`
+
+nRF52840 and nRF54L15 have existing MicroPython support in Seeed's repo (`boards/seeed/xiao_nrf54l15/`, `boards/seeed/xiao_ble/`). These use Zephyr, NOT the legacy `micropython/ports/nrf` port.
 
 | Method | Tool | Command |
 |---|---|---|

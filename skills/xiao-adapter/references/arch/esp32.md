@@ -47,7 +47,16 @@ ESP32 Arduino core uses a different variant structure than SAMD:
 
 ESP32 does not use `PinDescription` arrays. Pin mapping is handled by the GPIO matrix in the core.
 
-## Upload / Debug
+## MicroPython
+
+- **Port**: `lib/micropython/ports/esp32` (ESP-IDF based)
+- **Config style**: Traditional (`mpconfigboard.h`, `mpconfigboard.mk`, `pins.csv`)
+- **Pin naming**: `GPIOx` (e.g., `GPIO5`, `GPIO21`)
+- **Flash**: esptool (`esptool.py --chip esp32c3 --port /dev/ttyUSB0 write_flash -z 0x0 firmware.bin`)
+- **Toolchain**: `xtensa-esp32-elf` or `riscv32-esp-elf` (ESP32-C3)
+- **Build**: `make BOARD=ESP32_GENERIC BOARD_DIR=../../../../boards/seeed/xiao_esp32c3`
+
+XIAO ESP32-C3 has existing MicroPython support in Seeed's repo.
 
 | Method | Tool | Command |
 |---|---|---|

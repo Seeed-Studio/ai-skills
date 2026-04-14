@@ -48,7 +48,16 @@ STM32duino relies on STM32 HAL. Key configuration files:
 | `system_stm32yyxx.c` | Clock configuration |
 | `ld/stm32yyxx_<flash>.ld` | Linker script for memory layout |
 
-## Upload / Debug
+## MicroPython
+
+- **Port**: `lib/micropython/ports/stm32` (primary ARM Cortex-M port)
+- **Config style**: Traditional (`mpconfigboard.h`, `mpconfigboard.mk`, `pins.csv`)
+- **Pin naming**: `PAxx` (e.g., `PA9`, `PB6`)
+- **Flash**: OpenOCD (SWD), STM32CubeProgrammer, or dfu-util (DFU)
+- **Toolchain**: `gcc-arm-none-eabi`
+- **Build**: `make BOARD=SEEED_XIAO_STM32F103 BOARD_DIR=../../../../boards/seeed/xiao_stm32f103`
+
+The stm32 port is MicroPython's most mature ARM Cortex-M port and serves as the base for many MCUs including SAMD21 and GD32.
 
 | Method | Tool | Command |
 |---|---|---|

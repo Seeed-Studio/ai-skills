@@ -36,7 +36,7 @@ Determine the target platform from user context, then read the corresponding ref
 |---|---|---|
 | Arduino | [references/arduino-bsp.md](references/arduino-bsp.md) | `boards.txt`, `pins_arduino.h`, variant files |
 | PlatformIO | [references/platformio.md](references/platformio.md) | `platformio.ini`, board JSON definition |
-| MicroPython | [references/micropython.md](references/micropython.md) | `mpconfigboard.h`, `pins.csv`, `board_init.c` |
+| MicroPython | [references/micropython.md](references/micropython.md) | Board config files (see reference for two-track system) |
 
 If the user requests multiple platforms, process each independently.
 
@@ -48,7 +48,7 @@ Board identifiers differ by platform:
 |---|---|---|
 | Arduino (boards.txt) | `seeed_xiao_<chip>` (underscores) | `seeed_xiao_samd21plus` |
 | PlatformIO (board JSON) | `seeed-xiao-<chip>` (hyphens) | `seeed-xiao-samd21plus` |
-| MicroPython | `SEEED_XIAO_<CHIP>` (uppercase) | `SEEED_XIAO_SAMD21PLUS` |
+| MicroPython | `xiao_<variant>` (lowercase, in repo) / `SEEED_XIAO_<CHIP>` (in mpconfigboard.h) | `xiao_samd21plus` / `SEEED_XIAO_SAMD21PLUS` |
 
 > **PlatformIO board ID requirement**: The board ID must contain the architecture keyword for auto-detection (`samd`, `esp32`, `nrf`, `rp2040`, etc.). See [references/platformio.md](references/platformio.md) for details.
 
@@ -207,7 +207,7 @@ After compilation passes, commit the generated files to the **target repositorie
 |---|---|---|
 | Arduino | `Seeed-Studio/ArduinoCore-samd` (or equivalent core) | `boards.txt`, `variants/<board>/` |
 | PlatformIO | `Seeed-Studio/platform-seeedboards` | `boards/<board>.json`, platform config if needed |
-| MicroPython | `micropython/micropython` or Seeed fork | `ports/<port>/boards/<board>/` |
+| MicroPython | `Seeed-Studio/micropython-seeed-boards` | `boards/<board_name>/` (wrapper repo) |
 | Skill repo | `Seeed-Studio/ai-skills` | Only skill definition updates (rare) |
 
 #### 5.1 Create feature branches
