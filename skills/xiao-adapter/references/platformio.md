@@ -143,7 +143,11 @@ Create `boards/seeed_xiao_<chip>.json`:
 }
 ```
 
-> **Note**: For chip-specific upload tools and debug configurations, see the [architecture reference](arch/).
+> **Important**: Many platforms have **required** board JSON fields that differ from this generic template. **Always** check the architecture reference before generating the board JSON:
+>
+> - **atmelsam** (SAMD21/SAMD51): Requires `debug.openocd_chipname` (asserted by platform), `upload.native_usb`, `upload.offset_address`, `build.hwids` for VID/PID (NOT `board_build.vid`). See [arch/samd21.md — PlatformIO Board JSON](arch/samd21.md#platformio-board-json-atmelsam-platform).
+> - **ststm32** (STM32): See [arch/stm32.md](arch/stm32.md) for upload and debug specifics.
+> - **espressif32** (ESP32): See [arch/esp32.md](arch/esp32.md) for partition table and flash config.
 
 ### Registering custom board
 
@@ -343,3 +347,6 @@ void loop() {
 | Linker error: RAM overflow | Too large for MCU RAM | Optimize code or select a larger RAM variant |
 | Wrong flash size | `maximum_size` mismatch | Verify against MCU datasheet and adjust board JSON |
 | Chip-specific build error | Missing arch-specific config | See [architecture reference](arch/) for required build flags |
+| `AssertionError` (atmelsam) | Missing `openocd_chipname` in board JSON debug section | Add `debug.openocd_chipname` — see [arch/samd21.md](arch/samd21.md#platformio-board-json-atmelsam-platform) |
+| `USB_VID`/`USB_PID` not declared (atmelsam) | Used `board_build.vid`/`pid` instead of `build.hwids` | Use `build.hwids` array — see [arch/samd21.md](arch/samd21.md#usb-vidpid-via-buildhwids-not-board_buildvid) |
+| `Missed J-Link Device ID` (atmelsam) | Missing `jlink_device` in board JSON debug section | Add `debug.jlink_device` — see [arch/samd21.md](arch/samd21.md#platformio-board-json-atmelsam-platform) |

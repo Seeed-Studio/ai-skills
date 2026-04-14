@@ -198,3 +198,102 @@ After generating `variant.cpp`, verify **every** PWM-capable pin against the Pin
 4. **Check `#include`**: `variant.h` must include `<WVariant.h>`, NOT `<Arduino.h>`.
 5. **Check `g_apTCInstances`**: Must be `{ TCC0, TCC1, TCC2, TC3, TC4, TC5 }` — no TC0, TC1, TC2, no TCC3.
 6. **Check SERCOM types**: Verify `PIO_SERCOM` vs `PIO_SERCOM_ALT` matches the pin mux table in the datasheet.
+
+## PlatformIO Board JSON (atmelsam platform)
+
+When creating a custom board JSON for PlatformIO's `atmelsam` platform, the following fields are **required** and differ from the generic template:
+
+### Required debug fields
+
+```json
+"debug": {
+  "jlink_device": "ATSAMD21G18",
+  "openocd_chipname": "at91samd21g18",
+  "openocd_target": "at91samdXX",
+  "svd_path": "ATSAMD21G18A.svd"
+}
+```
+
+> **Critical**: `openocd_chipname` is **mandatory** — the atmelsam platform asserts this value exists. Without it, PlatformIO crashes with `AssertionError`.
+
+### Required upload fields
+
+```json
+"upload": {
+  "disable_flushing": true,
+  "maximum_ram_size": 32768,
+  "maximum_size": 262144,
+  "native_usb": true,
+  "offset_address": "0x2000",
+  "protocol": "sam-ba",
+  "protocols": ["sam-ba", "blackmagic", "jlink", "atmel-ice"],
+  "require_upload_port": true,
+  "use_1200bps_touch": true,
+  "wait_for_upload_port": true
+}
+```
+
+- `offset_address`: must be `"0x2000"` (bootloader occupies first 8KB)
+- `native_usb`, `disable_flushing`, `require_upload_port`, `use_1200bps_touch`, `wait_for_upload_port`: all required for UF2 bootloader entry via 1200bps touch
+
+### USB VID/PID via build.hwids (NOT board_build.vid)
+
+USB VID/PID are **NOT** set via `board_build.vid`/`board_build.pid`. They must be in `build.hwids`:
+
+```json
+"build": {
+  "hwids": [
+    ["0x2886", "0x8049"],
+    ["0x2886", "0x0049"]
+  ]
+}
+```
+
+The first pair is the normal PID, the second is the bootloader PID. The atmelsam platform builder reads `hwids` to generate `-DUSB_VID=0x2886 -DUSB_PID=0x8049` for the core.
+
+### build.variant must match the core's variant directory name
+
+The `build.variant` value must exactly match the directory name under the Arduino core's `variants/` folder. For Seeed's fork, this is the directory name without prefix (e.g., `"XIAO_m0"`, NOT `"seeed_xiao_m0"`):
+
+```json
+"build": {
+  "variant": "seeed_xiao_samd21plus"
+}
+```
+
+### Complete example (seeed_xiao_samd21plus)
+
+```json
+{
+  "build": {
+    "core": "arduino",
+    "cpu": "cortex-m0plus",
+    "extra_flags": [
+      "-DARDUINO_SAMD_ZERO", "-D__SAMD21__", "-D__SAMD21G18A__",
+      "-DARM_MATH_CM0PLUS", "-DSEEED_XIAO_SAMD21PLUS", "-DUSBCON"
+    ],
+    "f_cpu": "48000000L",
+    "hwids": [["0x2886", "0x8049"], ["0x2886", "0x0049"]],
+    "mcu": "samd21g18a",
+    "usb_product": "Seeed XIAO SAMD21-Plus",
+    "variant": "seeed_xiao_samd21plus"
+  },
+  "connectivity": ["uart", "spi", "i2c", "usb"],
+  "debug": {
+    "jlink_device": "ATSAMD21G18",
+    "openocd_chipname": "at91samd21g18",
+    "openocd_target": "at91samdXX",
+    "svd_path": "ATSAMD21G18A.svd"
+  },
+  "frameworks": ["arduino"],
+  "name": "Seeed XIAO SAMD21-Plus",
+  "upload": {
+    "disable_flushing": true, "maximum_ram_size": 32768, "maximum_size": 262144,
+    "native_usb": true, "offset_address": "0x2000", "protocol": "sam-ba",
+    "protocols": ["sam-ba", "blackmagic", "jlink", "atmel-ice"],
+    "require_upload_port": true, "use_1200bps_touch": true, "wait_for_upload_port": true
+  },
+  "url": "https://wiki.seeedstudio.com/XIAO/",
+  "vendor": "Seeed Studio"
+}
+```
