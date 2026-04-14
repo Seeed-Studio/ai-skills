@@ -7,10 +7,9 @@
 3. [Core Configuration Files](#3-core-configuration-files)
 4. [Pin Definition](#4-pin-definition)
 5. [Board Initialization](#5-board-initialization)
-6. [Build Configuration](#6-build-configuration)
-7. [Compile and Flash](#7-compile-and-flash)
-8. [Automated Testing with pyboard](#8-automated-testing-with-pyboard)
-9. [Common Issues](#9-common-issues)
+6. [Build and Flash](#6-build-and-flash)
+7. [Automated Testing with pyboard](#7-automated-testing-with-pyboard)
+8. [Common Issues](#8-common-issues)
 
 ---
 
@@ -18,14 +17,13 @@
 
 Choose the closest existing port in `micropython/ports/` as the base:
 
-| Architecture | Port Directory | Suitable For |
+| Architecture | Port Directory | Architecture Reference |
 |---|---|---|
-| ARM Cortex-M | `ports/stm32/` | STM32, GD32, ATSAM |
-| ARM Cortex-M (bare) | `ports/nrf/` | Nordic nRF52 |
-| ESP32 Xtensa | `ports/esp32/` | ESP32, ESP32-S2/S3/C3/C6 |
-| RP2040 ARM | `ports/rp2/` | RP2040 |
-| RISC-V | `ports/rp2/` (multi-arch) | RISC-V MCUs with RP2-like structure |
-| MIPS | `ports/pic16bit/` | PIC (rarely used for XIAO) |
+| ARM Cortex-M (STM32, GD32, ATSAM) | `ports/stm32/` | [arch/stm32.md](arch/stm32.md), [arch/samd21.md](arch/samd21.md) |
+| Nordic nRF52 | `ports/nrf/` | [arch/nrf52.md](arch/nrf52.md) |
+| ESP32 Xtensa | `ports/esp32/` | [arch/esp32.md](arch/esp32.md) |
+| RP2040 ARM | `ports/rp2/` | [arch/rp2040.md](arch/rp2040.md) |
+| RISC-V | `ports/rp2/` (multi-arch) | Consult vendor docs |
 
 Clone MicroPython:
 
@@ -155,77 +153,25 @@ freeze("$(PORT_DIR)/modules")
 ```
 # XIAO <Chip> pin mapping
 # Format: board_pin, pin_name, pin_function
-D0, PA10, GPIO
-D1, PA9, GPIO
-D2, PA0, GPIO
-D3, PA1, GPIO
-D4, PB7, GPIO
-D5, PB6, GPIO
-D6, PA7, GPIO
-D7, PA6, GPIO
-D8, PA5, GPIO
-D9, PA4, GPIO
-D10, PA3, GPIO
-D11, PA2, GPIO
-LED, PB1, GPIO
+D0, <MCU_PIN_D0>, GPIO
+D1, <MCU_PIN_D1>, GPIO
+D2, <MCU_PIN_D2>, GPIO
+D3, <MCU_PIN_D3>, GPIO
+D4, <MCU_PIN_D4>, GPIO
+D5, <MCU_PIN_D5>, GPIO
+D6, <MCU_PIN_D6>, GPIO
+D7, <MCU_PIN_D7>, GPIO
+D8, <MCU_PIN_D8>, GPIO
+D9, <MCU_PIN_D9>, GPIO
+D10, <MCU_PIN_D10>, GPIO
+LED, <MCU_PIN_LED>, GPIO
 ```
 
-### Pin naming conventions for MicroPython
+### Pin naming conventions
 
 - **board_pin**: The name exposed to MicroPython users (e.g., `D0`, `LED`)
-- **pin_name**: The MCU port/pin (e.g., `PA10`, `PB6`, `GPIO0`)
+- **pin_name**: The MCU port/pin (e.g., `PA10`, `GPIO0`) — see [architecture reference](arch/) for naming format
 - **pin_function**: Always `GPIO` for basic pins; some ports support `ALT` for alternate functions
-
-### STM32-specific pin CSV
-
-```
-D0, PA10, GPIO
-D1, PA9, GPIO
-D2, PA0, GPIO
-D3, PA1, GPIO
-D4, PB7, GPIO
-D5, PB6, GPIO
-D6, PA7, GPIO
-D7, PA6, GPIO
-D8, PA5, GPIO
-D9, PA4, GPIO
-D10, PA3, GPIO
-LED, PB1, GPIO
-```
-
-### ESP32-specific pin CSV
-
-```
-D0, GPIO0, GPIO
-D1, GPIO1, GPIO
-D2, GPIO2, GPIO
-D3, GPIO3, GPIO
-D4, GPIO4, GPIO
-D5, GPIO5, GPIO
-D6, GPIO6, GPIO
-D7, GPIO7, GPIO
-D8, GPIO8, GPIO
-D9, GPIO9, GPIO
-D10, GPIO10, GPIO
-LED, GPIO11, GPIO
-```
-
-### RP2-specific pin CSV
-
-```
-D0, GPIO0, GPIO
-D1, GPIO1, GPIO
-D2, GPIO2, GPIO
-D3, GPIO3, GPIO
-D4, GPIO4, GPIO
-D5, GPIO5, GPIO
-D6, GPIO6, GPIO
-D7, GPIO7, GPIO
-D8, GPIO8, GPIO
-D9, GPIO9, GPIO
-D10, GPIO10, GPIO
-LED, GPIO11, GPIO
-```
 
 ## 5. Board Initialization
 
@@ -278,7 +224,7 @@ void board_sleep_prepare(void) {
 }
 ```
 
-## 6. Build Configuration
+## 6. Build and Flash
 
 ### Prerequisites
 
@@ -286,70 +232,20 @@ void board_sleep_prepare(void) {
 # Install required tools (Debian/Ubuntu)
 sudo apt install build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi \
                  python3 python3-pip git wget
-
-# For ESP32 port
-sudo apt install python3-venv ccache
-
-# For RP2 port
-sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi
 ```
 
-### Cross-compiler setup (STM32 example)
+> For ESP32 port, also install: `python3-venv ccache`
+> For RP2 port, also install: `cmake gcc-arm-none-eabi libnewlib-arm-none-eabi`
 
-```bash
-# ARM GCC toolchain
-sudo apt install gcc-arm-none-eabi
-
-# Verify
-arm-none-eabi-gcc --version
-```
-
-### Build steps (STM32)
-
-```bash
-cd micropython/ports/stm32
-
-# Submodule update (first time)
-make submodules
-
-# Build for XIAO board
-make BOARD=SEEED_XIAO_<CHIP>
-
-# Build with cross-compiler
-make BOARD=SEEED_XIAO_<CHIP> CROSS_COMPILE=arm-none-eabi-
-```
-
-### Build steps (ESP32)
-
-```bash
-cd micropython/ports/esp32
-
-# Setup ESP-IDF (first time)
-make submodules
-cd esp-idf && ./install.sh && cd ..
-
-# Build for XIAO board
-make BOARD=SEEED_XIAO_<CHIP>
-```
-
-### Build steps (RP2)
-
-```bash
-cd micropython/ports/rp2
-
-# Submodule update (first time)
-make submodules
-
-# Build for XIAO board
-make BOARD=SEEED_XIAO_<CHIP>
-```
-
-## 7. Compile and Flash
-
-### Build firmware
+### Build
 
 ```bash
 cd micropython/ports/<port>
+
+# Submodule update (first time)
+make submodules
+
+# Build for XIAO board
 make BOARD=SEEED_XIAO_<CHIP>
 ```
 
@@ -358,42 +254,18 @@ Output firmware files are typically in `build-SEEED_XIAO_<CHIP>/`:
 - `firmware.bin` — Raw binary
 - `firmware.uf2` — UF2 format (RP2040)
 
-### Flash via OpenOCD (STM32)
+### Flash
 
-```bash
-# Via CMSIS-DAP
-openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg \
-        -c "program build-SEEED_XIAO_<CHIP>/firmware.hex verify reset exit"
+Use the upload method appropriate for the target architecture. See the [architecture reference](arch/) for specific commands:
 
-# Via ST-Link
-openocd -f interface/stlink.cfg -f target/stm32f1x.cfg \
-        -c "program build-SEEED_XIAO_<CHIP>/firmware.hex verify reset exit"
-```
+| Architecture | Typical Method |
+|---|---|
+| STM32 / SAMD | OpenOCD or STM32CubeProgrammer |
+| ESP32 | esptool |
+| RP2040 | picotool or UF2 drag-and-drop |
+| nRF52 | nrfjprog or DFU |
 
-### Flash via esptool (ESP32)
-
-```bash
-esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 460800 \
-           write_flash -z 0x0 build-SEEED_XIAO_<CHIP>/firmware.bin
-```
-
-### Flash via picotool (RP2040)
-
-```bash
-# Hold BOOTSEL, connect USB, release
-picotool load build-SEEED_XIAO_<CHIP>/firmware.uf2
-
-# Or copy .uf2 to mass storage
-cp build-SEEED_XIAO_<CHIP>/firmware.uf2 /media/<user>/RPI-RP2/
-```
-
-### Flash via STM32CubeProgrammer (STM32, GUI)
-
-1. Connect debugger (ST-Link / CMSIS-DAP)
-2. Select `firmware.hex` file
-3. Click "Download"
-
-## 8. Automated Testing with pyboard
+## 7. Automated Testing with pyboard
 
 ### Setup pyboard.py
 
@@ -492,7 +364,7 @@ pyboard.py --device /dev/ttyACM0 -c "import machine; print(machine.Pin('LED', ma
 pyboard.py --device /dev/ttyACM0 -c "import micropython; micropython.kbd_intr(); import repl; repl.enter()"
 ```
 
-## 9. Common Issues
+## 8. Common Issues
 
 | Problem | Cause | Solution |
 |---|---|---|

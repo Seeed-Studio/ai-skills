@@ -155,17 +155,113 @@ When no schematic is available, gather chip information from the user or datashe
 
 If information is incomplete, ask the user for the missing items. Note: VID/PID is already collected in Step 0.
 
-### Step 2: Pull Base Project
+### Step 2: Pull Base Project & Load Architecture Reference
 
 Clone the appropriate base repository for the target platform and chip architecture. See each platform reference for specific commands.
 
-### Step 3: Generate Configuration
+**Load the architecture-specific reference** based on the identified MCU family. This provides chip-specific include requirements, pin mux details, PWM/TC channel mappings, upload tools, and known pitfalls:
 
-Follow the platform-specific reference to generate all required config files. Place generated files in the correct directory structure. When using schematic-driven path, populate pin mappings from the extraction results (A4).
+| MCU Family | Architecture Reference |
+|---|---|
+| SAMD21 / SAMD51 | [references/arch/samd21.md](references/arch/samd21.md) |
+| ESP32 / ESP32-C3 / ESP32-S3 | [references/arch/esp32.md](references/arch/esp32.md) |
+| STM32 (F1/F4/H7, GD32) | [references/arch/stm32.md](references/arch/stm32.md) |
+| RP2040 | [references/arch/rp2040.md](references/arch/rp2040.md) |
+| nRF52 / nRF52840 | [references/arch/nrf52.md](references/arch/nrf52.md) |
+
+> **Important**: The architecture reference contains critical chip-specific knowledge that CANNOT be guessed — always read it before generating variant files. If no matching architecture reference exists, create one by extracting chip-specific notes from the datasheet.
+
+### Step 3: Generate Configuration & Validate
+
+Follow the platform-specific reference to generate all required config files, applying chip-specific rules from the architecture reference. Place generated files in the correct directory structure. When using schematic-driven path, populate pin mappings from the extraction results (A4).
+
+**After generating files, validate against the architecture reference before compiling.** This catches errors that the compiler may not flag until link time (e.g., wrong PWM channel numbers that happen to compile but misbehave at runtime):
+
+#### 3a. Pre-compile Validation (mandatory)
+
+Check every generated file against the architecture reference:
+
+1. **variant.h include check**: Does it use the correct arch-specific include? (e.g., SAMD: `WVariant.h`, not `Arduino.h`)
+2. **PinDescription PWM check**: For every pin with PWM capability, verify the PWM alias and TC channel match the arch PWM table — pin by pin
+3. **ADC channel check**: For every analog pin, verify the ADC channel number matches the arch ADC table (channels are non-sequential on many MCUs)
+4. **Timer instance check**: Verify `g_apTCInstances` (or equivalent) only lists valid timer instances for the MCU
+5. **boards.txt PID check**: Verify all `<USER_PROVIDED_PID>` placeholders have been replaced with actual values from Step 0
+
+> **Do NOT skip this step.** Invalid PWM/ADC/timer values are the #1 source of compile errors in BSP adaptation.
+
+#### 3b. Generate remaining config files
+
+After validation passes, generate any remaining files (linker scripts, openocd configs, etc.) per the platform reference.
 
 ### Step 4: Compile and Verify
 
 Use the platform toolchain to compile. Fix errors iteratively. Run the standard test suite (see below).
+
+### Step 5: Git Workflow
+
+After compilation passes, commit the generated BSP files to the **target platform repository**, not the `ai-skills` repo.
+
+| Repo | Contents | Example |
+|---|---|---|
+| **BSP repo** (target) | Generated board config files | `Seeed-Studio/ArduinoCore-samd` |
+| **Skill repo** (ai-skills) | Skill definition, references | `Seeed-Studio/ai-skills` |
+
+#### 5.1 Create a feature branch
+
+```bash
+cd <BSP_REPO>
+git checkout -b feat/seeed_xiao_<chip>-<platform>
+```
+
+Branch naming: `feat/seeed_xiao_<chip>-arduino`, `feat/seeed_xiao_<chip>-platformio`, etc.
+
+#### 5.2 Stage and commit generated files
+
+Only commit the board configuration files — do not commit build artifacts, test sketches, or the base repo itself:
+
+```bash
+git add boards.txt                          # or the specific board entry
+git add variants/seeed_xiao_<chip>/        # variant.h, variant.cpp, pins_arduino.h
+git commit -m "feat: add Seeed XIAO <Chip> board support"
+```
+
+#### 5.3 Push to remote
+
+```bash
+git push -u origin feat/seeed_xiao_<chip>-<platform>
+```
+
+#### 5.4 Create a Pull Request
+
+Use `gh` CLI if available:
+
+```bash
+gh pr create \
+  --title "feat: add Seeed XIAO <Chip> board support" \
+  --body "## Summary
+- Add variant files for Seeed XIAO <Chip> (<MCU>)
+- Pin mapping extracted from schematic / manual entry
+- Tested: Blink, Serial, I2C, SPI
+## Test plan
+- [ ] Verify compilation passes
+- [ ] Test on real hardware with standard checklist"
+```
+
+Or create the PR via GitHub web UI.
+
+#### 5.5 Skill definition update (only if skill files were modified)
+
+> **This step is rare** — only run this if the `arch/*.md` references or `SKILL.md` needed corrections during the adaptation workflow (e.g., found a wrong PWM channel mapping, needed to add a new architecture).
+
+The skill definition lives in the `ai-skills` repo (separate from the BSP repo). Do NOT commit BSP output files here.
+
+```bash
+cd <AI_SKILLS_REPO>
+git checkout -b update/xiao-adapter-<description>
+git add skills/xiao-adapter/   # only skill definition files, NOT BSP output
+git commit -m "docs(xiao-adapter): <description>"
+git push -u origin update/xiao-adapter-<description>
+```
 
 ## Standard Test Checklist
 

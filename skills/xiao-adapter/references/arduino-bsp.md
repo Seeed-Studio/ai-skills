@@ -7,9 +7,8 @@
 3. [boards.txt Configuration](#3-boardstxt-configuration)
 4. [Variant Files](#4-variant-files)
 5. [pins_arduino.h Template](#5-pins_arduinoh-template)
-6. [Platform Specifics](#6-platform-specifics)
-7. [Compile and Upload](#7-compile-and-upload)
-8. [Common Issues](#8-common-issues)
+6. [Compile and Upload](#6-compile-and-upload)
+7. [Common Issues](#7-common-issues)
 
 ---
 
@@ -17,14 +16,14 @@
 
 Choose the BSP repo matching the target chip architecture:
 
-| Architecture | Base Repository | Example |
+| Architecture | Base Repository | Architecture Reference |
 |---|---|---|
-| STM32 | `stm32duino/Arduino_Core_STM32` | XIAO nRF52840 |
-| SAMD | `Seeed-Studio/ArduinoCore-samd` | XIAO SAMD21 (Seeed fork) |
-| nRF52 | `arduino/ArduinoCore-nRF528x-mbedos` | XIAO BLE nRF52840 |
-| ESP32 | `espressif/arduino-esp32` | XIAO ESP32C3, ESP32S3 |
-| RP2040 | `arduino/arduino-pico` | XIAO RP2040 |
-| RISC-V | Vendor-specific core | Custom chips |
+| SAMD21 / SAMD51 | `Seeed-Studio/ArduinoCore-samd` | [arch/samd21.md](arch/samd21.md) |
+| ESP32 family | `espressif/arduino-esp32` | [arch/esp32.md](arch/esp32.md) |
+| STM32 family | `stm32duino/Arduino_Core_STM32` | [arch/stm32.md](arch/stm32.md) |
+| RP2040 | `arduino/arduino-pico` | [arch/rp2040.md](arch/rp2040.md) |
+| nRF52 | `arduino/ArduinoCore-nRF528x-mbedos` | [arch/nrf52.md](arch/nrf52.md) |
+| RISC-V | Vendor-specific core | Consult vendor docs |
 
 > **Note**: For SAMD chips, always use Seeed's own fork `Seeed-Studio/ArduinoCore-samd` rather than the official Arduino repo. Seeed's fork includes XIAO-specific variant definitions and bootloader support.
 
@@ -106,22 +105,6 @@ seeed_xiao_<chip>.menu.debug.off.build.flags.debug=
 | `upload.protocol` | Upload protocol | `swd`, `cmsis-dap`, `serial` |
 | `upload.maximum_size` | Max sketch size in bytes | `262144`, `4194304` |
 
-### Example: STM32F103 XIAO Entry
-
-```
-seeed_xiao_stm32f103.name=Seeed XIAO STM32F103
-seeed_xiao_stm32f103.build.mcu=cortex-m3
-seeed_xiao_stm32f103.build.f_cpu=72000000L
-seeed_xiao_stm32f103.build.board=SEEED_XIAO_STM32F103
-seeed_xiao_stm32f103.build.core=arduino
-seeed_xiao_stm32f103.build.variant=seeed_xiao_stm32f103
-seeed_xiao_stm32f103.build.extra_flags=-DARDUINO_SEEED_XIAO_STM32F103
-seeed_xiao_stm32f103.upload.tool=openocd
-seeed_xiao_stm32f103.upload.protocol=swd
-seeed_xiao_stm32f103.upload.maximum_size=262144
-seeed_xiao_stm32f103.upload.speed=500000
-```
-
 ## 4. Variant Files
 
 ### variant.h
@@ -130,7 +113,9 @@ seeed_xiao_stm32f103.upload.speed=500000
 #ifndef VARIANT_H
 #define VARIANT_H
 
-#include <Arduino.h>
+#include <stdint.h>
+// Architecture-specific include goes here — see arch/<architecture>.md
+// Examples: #include <WVariant.h> (SAMD), #include <Arduino.h> (most others)
 
 // Board identifier
 #define BOARD_NAME           "Seeed XIAO <Chip>"
@@ -166,6 +151,14 @@ seeed_xiao_stm32f103.upload.speed=500000
 
 #endif
 ```
+
+### variant.cpp (if needed)
+
+Some architectures require a `variant.cpp` with peripheral pin mapping (e.g., `PinDescription` arrays). See the architecture-specific reference for details:
+
+- SAMD21: `PinDescription` array required — see [arch/samd21.md](arch/samd21.md)
+- ESP32: GPIO matrix, no PinDescription needed — see [arch/esp32.md](arch/esp32.md)
+- STM32: `PinMap` in core, no PinDescription — see [arch/stm32.md](arch/stm32.md)
 
 ## 5. pins_arduino.h Template
 
@@ -206,7 +199,7 @@ static const uint8_t A3 = PIN_A3;
 #define NUM_DIGITAL_PINS    14  // D0-D10 + internal pins
 #define NUM_ANALOG_INPUTS   4
 
-// PWM-capable pins (update based on MCU timer channels)
+// PWM-capable pins (update based on MCU timer channels — see arch/<architecture>.md)
 #define PWM_PIN_LIST        { D0, D1, D2, D3, D5, D6, D9, D10 }
 
 // Interrupt-capable pins
@@ -221,35 +214,9 @@ static const uint8_t A3 = PIN_A3;
 2. **Reserve LED pin** — typically active LOW on XIAO boards
 3. **Check pin mux** — ensure peripheral pins (SPI/I2C/UART) use the MCU's hardware peripheral pins, not GPIO bit-bang
 4. **ADC channels** — only assign analog pins to pins with actual ADC capability on the MCU
-5. **PWM channels** — only assign PWM to pins connected to hardware timer outputs
+5. **PWM channels** — only assign PWM to pins connected to hardware timer outputs (see architecture reference)
 
-## 6. Platform Specifics
-
-### STM32 (stm32duino)
-
-- Use `STM32CubeProgrammer` or `openocd` for upload
-- May need custom `stm32_def_build_info.h` for HAL configuration
-- Linker script from `ld/` directory must match flash/RAM layout
-
-### ESP32 (espressif)
-
-- Partition table may need customization for XIAO's flash size
-- USB CDC requires `CONFIG_USB_CDC_ENABLED=y` in `sdkconfig`
-- Use `esptool.py` for upload
-
-### RP2040 (arduino-pico)
-
-- Use `picotool` for upload
-- No external bootloader needed (UF2 over USB mass storage)
-- May need custom `CMakeLists.txt` for board-specific build flags
-
-### SAMD (ArduinoCore-samd)
-
-- Use `openocd` with `cmsis-dap` or `atmel_ice` programmer
-- Bootloader burned via `bossac` or `openocd`
-- Requires modified `variant.cpp` with clock and peripheral init
-
-## 7. Compile and Upload
+## 6. Compile and Upload
 
 ### Install arduino-cli
 
@@ -343,7 +310,7 @@ void loop() {
 }
 ```
 
-## 8. Common Issues
+## 7. Common Issues
 
 | Problem | Cause | Solution |
 |---|---|---|
@@ -352,3 +319,4 @@ void loop() {
 | Blink wrong speed | `build.f_cpu` mismatch | Verify F_CPU matches actual clock config in `variant.cpp` |
 | SPI not working | Pin mux conflict | Ensure SPI pins in `pins_arduino.h` match MCU hardware SPI pins |
 | Serial not working | USB CDC not configured | For USB-capable MCUs, enable CDC in core config; for UART, check TX/RX pins |
+| Compilation error in variant.cpp | Architecture-specific include or type missing | Read the [architecture reference](arch/) for required includes and types |

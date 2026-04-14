@@ -16,15 +16,15 @@
 
 Check if the target MCU is already supported by an existing PlatformIO platform:
 
-| MCU Vendor | Platform | Install Command |
-|---|---|---|
-| ST STM32 | `ststm32` | `pio pkg install -p "platformio/ststm32"` |
-| Espressif ESP32 | `espressif32` | `pio pkg install -p "platformio/espressif32"` |
-| Raspberry Pi RP2040 | `raspberrypi` | `pio pkg install -p "platformio/raspberrypi"` |
-| Microchip SAMD | `atmelsam` | `pio pkg install -p "platformio/atmelsam"` |
-| Nordic nRF52 | `nordicnrf52` | `pio pkg install -p "platformio/nordicnrf52"` |
-| GigaDevice GD32 | `gd32` | Check vendor registry |
-| Bouffalo Lab BL | Vendor-specific | Check vendor registry |
+| MCU Vendor | Platform | Install Command | Architecture Reference |
+|---|---|---|---|
+| ST STM32 | `ststm32` | `pio pkg install -p "platformio/ststm32"` | [arch/stm32.md](arch/stm32.md) |
+| Espressif ESP32 | `espressif32` | `pio pkg install -p "platformio/espressif32"` | [arch/esp32.md](arch/esp32.md) |
+| Raspberry Pi RP2040 | `raspberrypi` | `pio pkg install -p "platformio/raspberrypi"` | [arch/rp2040.md](arch/rp2040.md) |
+| Microchip SAMD | `atmelsam` | `pio pkg install -p "platformio/atmelsam"` | [arch/samd21.md](arch/samd21.md) |
+| Nordic nRF52 | `nordicnrf52` | `pio pkg install -p "platformio/nordicnrf52"` | [arch/nrf52.md](arch/nrf52.md) |
+| GigaDevice GD32 | `gd32` | Check vendor registry | [arch/stm32.md](arch/stm32.md) |
+| Bouffalo Lab BL | Vendor-specific | Check vendor registry | Consult vendor docs |
 
 If no official platform exists, proceed to [Custom Platform Creation](#4-custom-platform-creation).
 
@@ -66,52 +66,7 @@ monitor_speed = 115200
 monitor_filters = direct
 ```
 
-### Example: STM32F103 XIAO
-
-```ini
-[env:seeed_xiao_stm32f103]
-platform = ststm32
-board = seeed_xiao_stm32f103
-framework = arduino
-
-; Build flags
-build_flags =
-  -DARDUINO_SEEED_XIAO_STM32F103
-  -DHSE_VALUE=8000000U
-  -DUSE_HAL_DRIVER
-
-; STM32-specific options
-board_build.mcu = stm32f103cbt6
-board_build.f_cpu = 72000000L
-board_build.core = stm32
-
-; Upload via OpenOCD
-upload_protocol = cmsis-dap
-debug_tool = cmsis-dap
-```
-
-### Example: ESP32-C3 XIAO
-
-```ini
-[env:seeed_xiao_esp32c3]
-platform = espressif32
-board = seeed_xiao_esp32c3
-framework = arduino
-
-; Build flags
-build_flags =
-  -DARDUINO_SEEED_XIAO_ESP32C3
-  -DCONFIG_IDF_TARGET_ESP32C3
-
-; ESP32-specific options
-board_build.mcu = esp32c3
-board_build.flash_mode = dio
-board_build.flash_size = 4MB
-
-; Upload via USB
-upload_protocol = esptool
-monitor_speed = 115200
-```
+> **Note**: For chip-specific build flags (e.g., STM32 HSE_VALUE, ESP32 partition table), see the [architecture reference](arch/).
 
 ### Multi-environment configuration
 
@@ -188,36 +143,7 @@ Create `boards/seeed_xiao_<chip>.json`:
 }
 ```
 
-### Board JSON with pin mapping
-
-For platforms that support detailed pin definitions:
-
-```json
-{
-  "build": {
-    "core": "stm32",
-    "cpu": "cortex-m3",
-    "f_cpu": "72000000L",
-    "mcu": "stm32f103cbt6",
-    "variant": "seeed_xiao_stm32f103"
-  },
-  "connectivity": ["uart", "spi", "i2c", "usb"],
-  "debug": {
-    "default_tools": ["cmsis-dap"],
-    "openocd_target": "stm32f1x"
-  },
-  "frameworks": ["arduino"],
-  "name": "Seeed XIAO STM32F103",
-  "upload": {
-    "maximum_ram_size": 20480,
-    "maximum_size": 131072,
-    "protocol": "cmsis-dap",
-    "protocols": ["cmsis-dap", "jlink", "stlink"]
-  },
-  "url": "https://wiki.seeedstudio.com/XIAO/",
-  "vendor": "Seeed Studio"
-}
-```
+> **Note**: For chip-specific upload tools and debug configurations, see the [architecture reference](arch/).
 
 ### Registering custom board
 
@@ -416,3 +342,4 @@ void loop() {
 | `Platform not found` | Platform not installed | Run `pio platform install <platform_name>` |
 | Linker error: RAM overflow | Too large for MCU RAM | Optimize code or select a larger RAM variant |
 | Wrong flash size | `maximum_size` mismatch | Verify against MCU datasheet and adjust board JSON |
+| Chip-specific build error | Missing arch-specific config | See [architecture reference](arch/) for required build flags |
