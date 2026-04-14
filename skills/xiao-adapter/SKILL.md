@@ -42,13 +42,15 @@ If the user requests multiple platforms, process each independently.
 
 ## Naming Conventions
 
-All XIAO board identifiers follow this pattern:
+Board identifiers differ by platform:
 
-```
-seeed_xiao_<chip_series>
-```
+| Platform | Format | Example |
+|---|---|---|
+| Arduino (boards.txt) | `seeed_xiao_<chip>` (underscores) | `seeed_xiao_samd21plus` |
+| PlatformIO (board JSON) | `seeed-xiao-<chip>` (hyphens) | `seeed-xiao-samd21plus` |
+| MicroPython | `SEEED_XIAO_<CHIP>` (uppercase) | `SEEED_XIAO_SAMD21PLUS` |
 
-Examples: `seeed_xiao_rp2040`, `seeed_xiao_esp32c3`, `seeed_xiao_stm32f103`
+> **PlatformIO board ID requirement**: The board ID must contain the architecture keyword for auto-detection (`samd`, `esp32`, `nrf`, `rp2040`, etc.). See [references/platformio.md](references/platformio.md) for details.
 
 ## Workflow Overview
 
@@ -199,39 +201,51 @@ Use the platform toolchain to compile. Fix errors iteratively. Run the standard 
 
 ### Step 5: Git Workflow
 
-After compilation passes, commit the generated BSP files to the **target platform repository**, not the `ai-skills` repo.
+After compilation passes, commit the generated files to the **target repositories**, not the `ai-skills` repo.
 
-| Repo | Contents | Example |
+| Platform | Target Repo | What to commit |
 |---|---|---|
-| **BSP repo** (target) | Generated board config files | `Seeed-Studio/ArduinoCore-samd` |
-| **Skill repo** (ai-skills) | Skill definition, references | `Seeed-Studio/ai-skills` |
+| Arduino | `Seeed-Studio/ArduinoCore-samd` (or equivalent core) | `boards.txt`, `variants/<board>/` |
+| PlatformIO | `Seeed-Studio/platform-seeedboards` | `boards/<board>.json`, platform config if needed |
+| MicroPython | `micropython/micropython` or Seeed fork | `ports/<port>/boards/<board>/` |
+| Skill repo | `Seeed-Studio/ai-skills` | Only skill definition updates (rare) |
 
-#### 5.1 Create a feature branch
+#### 5.1 Create feature branches
 
 ```bash
-cd <BSP_REPO>
-git checkout -b feat/seeed_xiao_<chip>-<platform>
-```
+# Arduino BSP repo
+cd <BSP_REPO>  # e.g., ArduinoCore-samd
+git checkout -b feat/seeed_xiao_<chip>-arduino
 
-Branch naming: `feat/seeed_xiao_<chip>-arduino`, `feat/seeed_xiao_<chip>-platformio`, etc.
+# PlatformIO repo (if applicable)
+cd platform-seeedboards
+git checkout -b feat/seeed-xiao-<chip>-platformio
+```
 
 #### 5.2 Stage and commit generated files
 
 Only commit the board configuration files — do not commit build artifacts, test sketches, or the base repo itself:
 
+**Arduino repo:**
 ```bash
-git add boards.txt                          # or the specific board entry
+git add boards.txt
 git add variants/seeed_xiao_<chip>/        # variant.h, variant.cpp, pins_arduino.h
 git commit -m "feat: add Seeed XIAO <Chip> board support"
+```
+
+**PlatformIO repo:**
+```bash
+git add boards/seeed-xiao-<chip>.json
+git commit -m "feat: add Seeed XIAO <Chip> PlatformIO board support"
 ```
 
 #### 5.3 Push to remote
 
 ```bash
-git push -u origin feat/seeed_xiao_<chip>-<platform>
+git push -u origin feat/<branch-name>
 ```
 
-#### 5.4 Create a Pull Request
+#### 5.4 Create Pull Requests
 
 Use `gh` CLI if available:
 

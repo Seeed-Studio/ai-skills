@@ -2,31 +2,46 @@
 
 ## Table of Contents
 
-1. [Platform Selection](#1-platform-selection)
+1. [Platform Overview](#1-platform-overview)
 2. [platformio.ini Configuration](#2-platformioini-configuration)
-3. [Custom Board Definition](#3-custom-board-definition)
-4. [Custom Platform Creation](#4-custom-platform-creation)
+3. [Board JSON Definition](#3-board-json-definition)
+4. [Adding Board to Seeed Platform](#4-adding-board-to-seeed-platform)
 5. [Compile and Upload](#5-compile-and-upload)
 6. [Test Projects](#6-test-projects)
 7. [Common Issues](#7-common-issues)
 
 ---
 
-## 1. Platform Selection
+## 1. Platform Overview
 
-Check if the target MCU is already supported by an existing PlatformIO platform:
+Seeed maintains a **unified PlatformIO platform** that hosts all XIAO board definitions:
 
-| MCU Vendor | Platform | Install Command | Architecture Reference |
+- **Repository**: `https://github.com/Seeed-Studio/platform-seeedboards`
+- **Platform name**: `Seeed Studio`
+- **Board ID format**: `seeed-xiao-<chip>` (hyphens, NOT underscores)
+
+The platform auto-detects the MCU architecture from the board ID and routes to architecture-specific builder scripts:
+
+| Board ID pattern | Architecture | Builder script | Framework package |
 |---|---|---|---|
-| ST STM32 | `ststm32` | `pio pkg install -p "platformio/ststm32"` | [arch/stm32.md](arch/stm32.md) |
-| Espressif ESP32 | `espressif32` | `pio pkg install -p "platformio/espressif32"` | [arch/esp32.md](arch/esp32.md) |
-| Raspberry Pi RP2040 | `raspberrypi` | `pio pkg install -p "platformio/raspberrypi"` | [arch/rp2040.md](arch/rp2040.md) |
-| Microchip SAMD | `atmelsam` | `pio pkg install -p "platformio/atmelsam"` | [arch/samd21.md](arch/samd21.md) |
-| Nordic nRF52 | `nordicnrf52` | `pio pkg install -p "platformio/nordicnrf52"` | [arch/nrf52.md](arch/nrf52.md) |
-| GigaDevice GD32 | `gd32` | Check vendor registry | [arch/stm32.md](arch/stm32.md) |
-| Bouffalo Lab BL | Vendor-specific | Check vendor registry | Consult vendor docs |
+| `*esp32*` | ESP32 | `builder/board_build/esp/` | `framework-arduinoespressif32` |
+| `*samd*` | SAMD21/SAMD51 | `builder/board_build/samd/` | `framework-arduino-samd-seeed` |
+| `*rp2040*` / `*rp2350*` | RP2040/RP2350 | `builder/board_build/rpi/` | `framework-arduinopico` |
+| `*nrf*` / `*52840*` | nRF52/nRF54 | `builder/board_build/nrf/` | `framework-arduinoadafruitnrf52` |
+| `*ra4m1*` | Renesas RA4M1 | `builder/board_build/renesas/` | `framework-arduinorenesas-uno` |
+| `*mg24*` | Silicon Labs MG24 | `builder/board_build/siliconlab/` | `framework-arduino-silabs` |
 
-If no official platform exists, proceed to [Custom Platform Creation](#4-custom-platform-creation).
+> **Important**: Board IDs must match the detection keywords above. For example, a SAMD21 board ID must contain `"samd"`.
+
+### Installation
+
+```bash
+# Stable (from PlatformIO registry)
+pio platform install "Seeed Studio"
+
+# Development (from GitHub)
+pio platform install "https://github.com/Seeed-Studio/platform-seeedboards.git"
+```
 
 ## 2. platformio.ini Configuration
 
@@ -35,8 +50,8 @@ If no official platform exists, proceed to [Custom Platform Creation](#4-custom-
 ```
 xiao-<chip>-test/
 ├── platformio.ini
-├── include/
-│   └── README
+├── boards/
+│   └── seeed-xiao-<chip>.json   # Custom board definition (if not in platform)
 ├── src/
 │   └── main.cpp
 └── lib/
@@ -47,181 +62,168 @@ xiao-<chip>-test/
 
 ```ini
 ; Seeed XIAO <Chip Name> PlatformIO Configuration
-[env:seeed_xiao_<chip>]
-platform = <platform_name>
-board = seeed_xiao_<chip>
-framework = arduino
+[platformio]
+default_envs = seeed-xiao-<chip>
 
-; Build options
-build_flags =
-  -DARDUINO_SEEED_XIAO_<CHIP>
-  -DUSBCON
-
-; Upload options
-upload_protocol = <protocol>
-upload_speed = <speed>
-
-; Monitor
+[env]
 monitor_speed = 115200
-monitor_filters = direct
+
+[env:seeed-xiao-<chip>]
+platform = Seeed Studio
+board = seeed-xiao-<chip>
+framework = arduino
 ```
 
-> **Note**: For chip-specific build flags (e.g., STM32 HSE_VALUE, ESP32 partition table), see the [architecture reference](arch/).
+### Using local variant (development)
+
+When developing a new variant that hasn't been merged into the platform's framework yet, use `board_build.variants_dir` to point to a project-local variant directory:
+
+```ini
+[env:seeed-xiao-samd21plus]
+platform = Seeed Studio
+board = seeed-xiao-samd21plus
+framework = arduino
+
+; Use project-local variant directory (instead of framework's built-in variants/)
+board_build.variants_dir = variants
+
+upload_protocol = sam-ba
+```
+
+Project structure with local variant:
+
+```
+xiao-samd21plus-test/
+├── platformio.ini
+├── boards/
+│   └── seeed-xiao-samd21plus.json
+├── variants/
+│   └── seeed_xiao_samd21plus/    # must match build.variant in board JSON
+│       ├── variant.h
+│       ├── variant.cpp
+│       ├── pins_arduino.h
+│       └── linker_scripts/
+└── src/
+    └── main.cpp
+```
+
+> **Note**: The variant directory name under `variants/` must match the `build.variant` field in the board JSON exactly.
 
 ### Multi-environment configuration
 
 ```ini
 [platformio]
-default_envs = seeed_xiao_<chip>
+default_envs = seeed-xiao-<chip>
 
-; Common settings
 [env]
 monitor_speed = 115200
 
-; XIAO <Chip> - Arduino framework
-[env:seeed_xiao_<chip>_arduino]
-platform = <platform_name>
-board = seeed_xiao_<chip>
+[env:seeed-xiao-<chip>_arduino]
+platform = Seeed Studio
+board = seeed-xiao-<chip>
 framework = arduino
-build_flags = -DARDUINO_SEEED_XIAO_<CHIP>
 
-; XIAO <Chip> - bare metal (if supported)
-[env:seeed_xiao_<chip>_bare]
-platform = <platform_name>
-board = seeed_xiao_<chip>
-framework = zephyr  ; or mbed, etc.
-build_flags = -DBOARD_SEEED_XIAO_<CHIP>
+[env:seeed-xiao-<chip>_zephyr]
+platform = Seeed Studio
+board = seeed-xiao-<chip>
+framework = zephyr
 ```
 
-## 3. Custom Board Definition
+## 3. Board JSON Definition
 
-If the board is not in the official platform, create a custom board definition.
+Board JSON files follow architecture-specific formats. **Always** read the architecture reference before creating a board JSON — each architecture has required fields that differ from the generic template.
 
-### Board JSON file
+### Architecture-specific references
 
-Create `boards/seeed_xiao_<chip>.json`:
+| Architecture | Reference | Key differences |
+|---|---|---|
+| SAMD21/SAMD51 | [arch/samd21.md — PlatformIO Board JSON](arch/samd21.md#platformio-board-json-seeed-unified-platform) | `core: "seeed"`, `system: "samd"`, `arduino.ldscript`, `openocd_chipname` |
+| ESP32 | [arch/esp32.md](arch/esp32.md) | `core: "esp32"`, partition table, flash mode |
+| RP2040/RP2350 | [arch/rp2040.md](arch/rp2040.md) | `core: "earlephilhower"`, boot2 source |
+| nRF52/nRF52840 | [arch/nrf52.md](arch/nrf52.md) | `core: "nRF5"`, softdevice, BSP name |
+| STM32 | [arch/stm32.md](arch/stm32.md) | `core` varies by framework |
+| nRF54L15 | [arch/nrf52.md](arch/nrf52.md) | Uses Zephyr framework |
+
+### Board JSON naming and ID convention
+
+- **Filename**: `seeed-xiao-<chip>.json` (hyphens)
+- **Board ID**: matches filename without `.json` extension
+- **Reference in platformio.ini**: `board = seeed-xiao-<chip>`
+
+### Generic board JSON structure
 
 ```json
 {
   "build": {
-    "core": "<core_name>",
+    "core": "<see platform table above>",
     "cpu": "<cpu_arch>",
+    "extra_flags": ["<arch-specific flags>"],
     "f_cpu": "<clock_freq>",
+    "hwids": [["<VID>", "<PID>"], ["<VID>", "<bootloader_PID>"]],
     "mcu": "<mcu_part_number>",
-    "variant": "seeed_xiao_<chip>"
+    "usb_product": "Seeed XIAO <Chip Name>",
+    "variant": "<variant_dir_name>"
   },
-  "connectivity": [
-    "uart",
-    "spi",
-    "i2c",
-    "usb"
-  ],
   "debug": {
-    "default_tools": [
-      "<debug_tool>"
-    ],
     "jlink_device": "<jlink_device>",
     "openocd_target": "<openocd_target>",
     "svd_path": "<path_to_svd_file>"
   },
-  "frameworks": [
-    "arduino",
-    "zephyr"
-  ],
+  "frameworks": ["arduino"],
   "name": "Seeed XIAO <Chip Name>",
   "upload": {
     "maximum_ram_size": <ram_bytes>,
     "maximum_size": <flash_bytes>,
     "protocol": "<upload_protocol>",
-    "protocols": [
-      "<protocol1>",
-      "<protocol2>"
-    ]
+    "protocols": ["<protocol1>", "<protocol2>"]
   },
   "url": "https://wiki.seeedstudio.com/XIAO_<CHIP>/",
   "vendor": "Seeed Studio"
 }
 ```
 
-> **Important**: Many platforms have **required** board JSON fields that differ from this generic template. **Always** check the architecture reference before generating the board JSON:
->
-> - **atmelsam** (SAMD21/SAMD51): Requires `debug.openocd_chipname` (asserted by platform), `upload.native_usb`, `upload.offset_address`, `build.hwids` for VID/PID (NOT `board_build.vid`). See [arch/samd21.md — PlatformIO Board JSON](arch/samd21.md#platformio-board-json-atmelsam-platform).
-> - **ststm32** (STM32): See [arch/stm32.md](arch/stm32.md) for upload and debug specifics.
-> - **espressif32** (ESP32): See [arch/esp32.md](arch/esp32.md) for partition table and flash config.
+> **Important**: This generic template is a starting point only. Each architecture adds required fields — see the architecture reference links above.
 
-### Registering custom board
+## 4. Adding Board to Seeed Platform
 
-Place the JSON in one of these locations:
+New XIAO boards should be added to the `Seeed-Studio/platform-seeedboards` repository:
 
-1. **Project-level**: `boards/seeed_xiao_<chip>.json` (next to `platformio.ini`)
-2. **Global-level**: `~/.platformio/boards/seeed_xiao_<chip>.json`
+### Step 1: Create board JSON
 
-Reference in `platformio.ini`:
+Create `boards/seeed-xiao-<chip>.json` following the architecture-specific format.
 
-```ini
-[env:seeed_xiao_<chip>]
-board = seeed_xiao_<chip>   ; matches JSON filename without extension
-```
+### Step 2: Add to platform (if needed)
 
-## 4. Custom Platform Creation
+If the architecture is new or requires new packages, update:
 
-If the MCU is not supported by any existing platform, create a custom one.
+1. **`platform.json`** — add framework/toolchain packages if not already present
+2. **`platform_cfg/<arch>_cfg.py`** — add architecture-specific package configuration
+3. **`builder/board_build/<arch>/`** — add or update build scripts
+4. **`builder/frameworks/arduino.py`** — add routing for the new board ID pattern
 
-### Platform directory structure
+### Step 3: Add framework package to platform.json
 
-```
-platform-<vendor>-<arch>/
-├── platform.json           # Platform manifest
-├── builder/
-│   └── main.py             # Build scripts
-├── boards/
-│   └── seeed_xiao_<chip>.json
-├── frameworks/
-│   └── arduino/
-│       └── variant.cpp
-└── misc/
-    └── packages.json       # Toolchain dependencies
-```
-
-### platform.json
+For SAMD boards, the framework is already configured. For new architectures, add to `platform.json` `packages`:
 
 ```json
-{
-  "name": "<vendor><arch>",
-  "title": "<Vendor> <Arch>",
-  "description": "Platform for <Vendor> <Arch> MCUs",
-  "url": "https://github.com/Seeed-Studio/platform-<vendor>-<arch>",
-  "version": "1.0.0",
-  "homepage": "https://wiki.seeedstudio.com/",
-  "license": "Apache-2.0",
-  "engines": {
-    "platformio": "^6"
-  },
-  "packages": {
-    "toolchain-<arch>": {
-      "type": "toolchain",
-      "owner": "platformio",
-      "version": "~<version>"
-    },
-    "framework-arduino-<vendor>": {
-      "type": "framework",
-      "owner": "Seeed-Studio",
-      "version": "https://github.com/Seeed-Studio/...<ref>"
-    }
-  }
+"framework-arduino-<vendor>": {
+  "type": "framework",
+  "optional": true,
+  "owner": "<owner>",
+  "version": "<source_url_or_version>"
 }
 ```
 
-### Install custom platform
+### Step 4: Submit PR to platform-seeedboards
 
 ```bash
-pio platform install "file:///path/to/platform-<vendor>-<arch>"
-```
-
-Or from a Git repository:
-
-```bash
-pio platform install "https://github.com/Seeed-Studio/platform-<vendor>-<arch>"
+cd platform-seeedboards
+git checkout -b add-seeed-xiao-<chip>
+# Add board JSON and any platform changes
+git add boards/seeed-xiao-<chip>.json
+git commit -m "feat: add Seeed XIAO <Chip Name> board support"
+git push origin add-seeed-xiao-<chip>
+# Create PR on GitHub
 ```
 
 ## 5. Compile and Upload
@@ -229,37 +231,37 @@ pio platform install "https://github.com/Seeed-Studio/platform-<vendor>-<arch>"
 ### Compile
 
 ```bash
-pio run -e seeed_xiao_<chip>
+pio run -e seeed-xiao-<chip>
 ```
 
 ### Upload
 
 ```bash
-pio run -e seeed_xiao_<chip> --target upload
+pio run -e seeed-xiao-<chip> --target upload
 ```
 
 ### Upload with specific port
 
 ```bash
-pio run -e seeed_xiao_<chip> --target upload --upload-port /dev/ttyUSB0
+pio run -e seeed-xiao-<chip> --target upload --upload-port /dev/ttyUSB0
 ```
 
 ### Clean build
 
 ```bash
-pio run -e seeed_xiao_<chip> --target clean
+pio run -e seeed-xiao-<chip> --target clean
 ```
 
 ### Serial monitor
 
 ```bash
-pio device monitor -e seeed_xiao_<chip>
+pio device monitor -e seeed-xiao-<chip>
 ```
 
 ### Compile + upload + monitor
 
 ```bash
-pio run -e seeed_xiao_<chip> --target upload && pio device monitor
+pio run -e seeed-xiao-<chip> --target upload && pio device monitor
 ```
 
 ## 6. Test Projects
@@ -340,13 +342,14 @@ void loop() {
 
 | Problem | Cause | Solution |
 |---|---|---|
-| `Unknown board` | Board JSON not found | Check JSON file is in `boards/` dir and name matches `platformio.ini` |
+| `Unknown board` | Board JSON not found | Check JSON filename matches `platformio.ini` board value |
+| `Platform not found` | Seeed platform not installed | Run `pio platform install "Seeed Studio"` |
 | Build error: undefined `LED_BUILTIN` | Missing variant or macro | Add `build_flags = -DLED_BUILTIN=<pin>` to `platformio.ini` |
 | Upload failed: no access | Linux USB permissions | Add user to `dialout` group or use `sudo` |
-| `Platform not found` | Platform not installed | Run `pio platform install <platform_name>` |
 | Linker error: RAM overflow | Too large for MCU RAM | Optimize code or select a larger RAM variant |
 | Wrong flash size | `maximum_size` mismatch | Verify against MCU datasheet and adjust board JSON |
-| Chip-specific build error | Missing arch-specific config | See [architecture reference](arch/) for required build flags |
-| `AssertionError` (atmelsam) | Missing `openocd_chipname` in board JSON debug section | Add `debug.openocd_chipname` — see [arch/samd21.md](arch/samd21.md#platformio-board-json-atmelsam-platform) |
-| `USB_VID`/`USB_PID` not declared (atmelsam) | Used `board_build.vid`/`pid` instead of `build.hwids` | Use `build.hwids` array — see [arch/samd21.md](arch/samd21.md#usb-vidpid-via-buildhwids-not-board_buildvid) |
-| `Missed J-Link Device ID` (atmelsam) | Missing `jlink_device` in board JSON debug section | Add `debug.jlink_device` — see [arch/samd21.md](arch/samd21.md#platformio-board-json-atmelsam-platform) |
+| `AssertionError` (SAMD) | Missing `openocd_chipname` in board JSON | Add `debug.openocd_chipname` — see [arch/samd21.md](arch/samd21.md#required-debug-fields) |
+| `Missed J-Link Device ID` (SAMD) | Missing `jlink_device` in board JSON | Add `debug.jlink_device` — see [arch/samd21.md](arch/samd21.md#required-debug-fields) |
+| `USB_VID`/`USB_PID` not declared | Missing or wrong `build.hwids` | Use `build.hwids` array format — see [arch/samd21.md](arch/samd21.md#required-build-fields) |
+| Board not detected by platform | Board ID doesn't match detection keyword | Board ID must contain architecture keyword (`samd`, `esp32`, `nrf`, etc.) |
+| Wrong framework package | Used official package name | Use Seeed's package name (e.g., `framework-arduino-samd-seeed`, NOT `framework-arduino-samd`) |

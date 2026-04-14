@@ -199,22 +199,62 @@ After generating `variant.cpp`, verify **every** PWM-capable pin against the Pin
 5. **Check `g_apTCInstances`**: Must be `{ TCC0, TCC1, TCC2, TC3, TC4, TC5 }` — no TC0, TC1, TC2, no TCC3.
 6. **Check SERCOM types**: Verify `PIO_SERCOM` vs `PIO_SERCOM_ALT` matches the pin mux table in the datasheet.
 
-## PlatformIO Board JSON (atmelsam platform)
+## PlatformIO Board JSON (Seeed unified platform)
 
-When creating a custom board JSON for PlatformIO's `atmelsam` platform, the following fields are **required** and differ from the generic template:
+SAMD boards in Seeed's unified PlatformIO platform (`Seeed-Studio/platform-seeedboards`) use these **required** fields that differ from the generic template.
+
+### Architecture detection
+
+The platform's `platform.py` detects SAMD boards by checking `"samd" in board_name`. Board IDs must contain `samd` (e.g., `seeed-xiao-samd21plus`).
+
+### Required build fields
+
+```json
+"build": {
+  "arduino": {
+    "ldscript": "flash_with_bootloader.ld"
+  },
+  "core": "seeed",
+  "cpu": "cortex-m0plus",
+  "extra_flags": [
+    "-DARDUINO_SAMD_ZERO", "-D__SAMD21__", "-D__SAMD21G18A__",
+    "-DARM_MATH_CM0PLUS", "-DSEEED_XIAO_SAMD21PLUS"
+  ],
+  "f_cpu": "48000000L",
+  "hwids": [["0x2886", "0x8049"], ["0x2886", "0x0049"]],
+  "mcu": "samd21g18a",
+  "system": "samd",
+  "usb_product": "Seeed XIAO SAMD21-Plus",
+  "variant": "seeed_xiao_samd21plus"
+}
+```
+
+Key differences from generic template:
+
+| Field | Value | Why |
+|---|---|---|
+| `build.core` | `"seeed"` | Seeed platform uses its own core package `framework-arduino-samd-seeed` |
+| `build.system` | `"samd"` | Required — builder script asserts `MCU_FAMILY in ("sam", "samd")` |
+| `build.arduino.ldscript` | `"flash_with_bootloader.ld"` | Linker script for UF2 bootloader offset |
+| `build.hwids` | Array of `[VID, PID]` pairs | USB VID/PID. First pair = normal PID, second = bootloader PID. Builder reads `hwids[0]` to generate `USB_VID`/`USB_PID` defines |
+
+> **Note**: `-DUSBCON` is NOT needed in `extra_flags` — the builder script (`samd_arduino.py`) adds it automatically via `CPPDEFINES`.
 
 ### Required debug fields
 
 ```json
 "debug": {
   "jlink_device": "ATSAMD21G18",
+  "onboard_tools": ["cmsis-dap"],
   "openocd_chipname": "at91samd21g18",
   "openocd_target": "at91samdXX",
   "svd_path": "ATSAMD21G18A.svd"
 }
 ```
 
-> **Critical**: `openocd_chipname` is **mandatory** — the atmelsam platform asserts this value exists. Without it, PlatformIO crashes with `AssertionError`.
+- `openocd_chipname`: **mandatory** — `samd_cfg.py` asserts this value exists for atmel-ice/cmsis-dap/stlink debug tools
+- `jlink_device`: **mandatory** — `samd_cfg.py` asserts this for J-Link debug tool
+- `onboard_tools`: list of debug tools available on-board (e.g., `["cmsis-dap"]`)
 
 ### Required upload fields
 
@@ -226,7 +266,7 @@ When creating a custom board JSON for PlatformIO's `atmelsam` platform, the foll
   "native_usb": true,
   "offset_address": "0x2000",
   "protocol": "sam-ba",
-  "protocols": ["sam-ba", "blackmagic", "jlink", "atmel-ice"],
+  "protocols": ["sam-ba", "cmsis-dap", "blackmagic", "jlink", "atmel-ice"],
   "require_upload_port": true,
   "use_1200bps_touch": true,
   "wait_for_upload_port": true
@@ -235,25 +275,11 @@ When creating a custom board JSON for PlatformIO's `atmelsam` platform, the foll
 
 - `offset_address`: must be `"0x2000"` (bootloader occupies first 8KB)
 - `native_usb`, `disable_flushing`, `require_upload_port`, `use_1200bps_touch`, `wait_for_upload_port`: all required for UF2 bootloader entry via 1200bps touch
+- `protocols`: include `"cmsis-dap"` if board has onboard CMSIS-DAP debugger
 
-### USB VID/PID via build.hwids (NOT board_build.vid)
+### build.variant must match the Arduino core's variant directory
 
-USB VID/PID are **NOT** set via `board_build.vid`/`board_build.pid`. They must be in `build.hwids`:
-
-```json
-"build": {
-  "hwids": [
-    ["0x2886", "0x8049"],
-    ["0x2886", "0x0049"]
-  ]
-}
-```
-
-The first pair is the normal PID, the second is the bootloader PID. The atmelsam platform builder reads `hwids` to generate `-DUSB_VID=0x2886 -DUSB_PID=0x8049` for the core.
-
-### build.variant must match the core's variant directory name
-
-The `build.variant` value must exactly match the directory name under the Arduino core's `variants/` folder. For Seeed's fork, this is the directory name without prefix (e.g., `"XIAO_m0"`, NOT `"seeed_xiao_m0"`):
+The `build.variant` value must exactly match the directory name under the Arduino core's `variants/` folder:
 
 ```json
 "build": {
@@ -261,26 +287,45 @@ The `build.variant` value must exactly match the directory name under the Arduin
 }
 ```
 
-### Complete example (seeed_xiao_samd21plus)
+### Board packages configured by platform
+
+The Seeed platform's `samd_cfg.py` automatically enables these packages for SAMD boards — do NOT specify them in `platformio.ini`:
+
+- `framework-arduino-samd-seeed` (Seeed's fork of Arduino SAMD core)
+- `toolchain-gccarmnoneeabi`
+- `tool-bossac`
+- `framework-cmsis-atmel`
+- `framework-cmsis`
+
+### Complete example (seeed-xiao-samd21plus)
+
+Board JSON filename: `boards/seeed-xiao-samd21plus.json`
 
 ```json
 {
   "build": {
-    "core": "arduino",
+    "arduino": {
+      "ldscript": "flash_with_bootloader.ld"
+    },
+    "core": "seeed",
     "cpu": "cortex-m0plus",
     "extra_flags": [
-      "-DARDUINO_SAMD_ZERO", "-D__SAMD21__", "-D__SAMD21G18A__",
-      "-DARM_MATH_CM0PLUS", "-DSEEED_XIAO_SAMD21PLUS", "-DUSBCON"
+      "-DARDUINO_SAMD_ZERO",
+      "-D__SAMD21__",
+      "-D__SAMD21G18A__",
+      "-DARM_MATH_CM0PLUS",
+      "-DSEEED_XIAO_SAMD21PLUS"
     ],
     "f_cpu": "48000000L",
     "hwids": [["0x2886", "0x8049"], ["0x2886", "0x0049"]],
     "mcu": "samd21g18a",
+    "system": "samd",
     "usb_product": "Seeed XIAO SAMD21-Plus",
     "variant": "seeed_xiao_samd21plus"
   },
-  "connectivity": ["uart", "spi", "i2c", "usb"],
   "debug": {
     "jlink_device": "ATSAMD21G18",
+    "onboard_tools": ["cmsis-dap"],
     "openocd_chipname": "at91samd21g18",
     "openocd_target": "at91samdXX",
     "svd_path": "ATSAMD21G18A.svd"
@@ -288,10 +333,16 @@ The `build.variant` value must exactly match the directory name under the Arduin
   "frameworks": ["arduino"],
   "name": "Seeed XIAO SAMD21-Plus",
   "upload": {
-    "disable_flushing": true, "maximum_ram_size": 32768, "maximum_size": 262144,
-    "native_usb": true, "offset_address": "0x2000", "protocol": "sam-ba",
-    "protocols": ["sam-ba", "blackmagic", "jlink", "atmel-ice"],
-    "require_upload_port": true, "use_1200bps_touch": true, "wait_for_upload_port": true
+    "disable_flushing": true,
+    "maximum_ram_size": 32768,
+    "maximum_size": 262144,
+    "native_usb": true,
+    "offset_address": "0x2000",
+    "protocol": "sam-ba",
+    "protocols": ["sam-ba", "cmsis-dap", "blackmagic", "jlink", "atmel-ice"],
+    "require_upload_port": true,
+    "use_1200bps_touch": true,
+    "wait_for_upload_port": true
   },
   "url": "https://wiki.seeedstudio.com/XIAO/",
   "vendor": "Seeed Studio"
