@@ -217,20 +217,6 @@ For entry mode selection, reading loop, and detailed workflow, see [SCHEMATIC_ST
 
 ---
 
-## Feedback Fix Methodology
-
-When processing problem reports from `problem_feedback/` or fixing bugs found during analysis,
-follow the methodology in [FEEDBACK_FIX_METHODOLOGY.md](./FEEDBACK_FIX_METHODOLOGY.md).
-
-Core rules:
-- Read feedback independently, do not rely on user summaries
-- Consider all edge cases before modifying code
-- Minimal changes only — no refactoring or "while we're here" improvements
-- Self-review changes before testing
-- Test with real Cadence samples (BeagleBone, GMSL, SICK, PAMIRAI), prefer complex cases
-
----
-
 ## MCP Integration
 
 ### pcbparts tools
