@@ -58,6 +58,12 @@ class ScopeResolver:
                 from .cadence.xml_parser import is_cadence_xml
                 if is_cadence_xml(input_path):
                     return input_path.resolve(), "flat", "cadence"
+
+            # Check for Cadence netlist .dat file — resolve via parent directory
+            if input_path.suffix.lower() == ".dat":
+                # Walk up to find the project directory (skip netlist subdirectory)
+                return cls._resolve_root_schematic(input_path.parent.parent.resolve())
+
             raise ValueError(f"Not a supported schematic file: {input_path}")
 
         if input_path.is_dir():
@@ -100,6 +106,20 @@ class ScopeResolver:
             for xml_file in sorted(input_path.glob("*.xml")):
                 if is_cadence_xml(xml_file):
                     return xml_file.resolve(), "flat", "cadence"
+
+            # Try Cadence netlist directory (contains pstxnet.dat etc.)
+            from .cadence.netlist_dat_parser import find_netlist_dir
+            netlist_dir = find_netlist_dir(input_path)
+            if netlist_dir is not None:
+                # Look for a companion .xml in the netlist dir or its parent
+                search_dirs = [netlist_dir, netlist_dir.parent]
+                for search_dir in search_dirs:
+                    from .cadence.xml_parser import is_cadence_xml
+                    for xml_file in sorted(search_dir.glob("*.xml")):
+                        if is_cadence_xml(xml_file):
+                            return xml_file.resolve(), "flat", "cadence"
+                # No XML found — return the netlist dir itself
+                return netlist_dir.resolve(), "flat", "cadence"
 
             raise FileNotFoundError(f"No supported schematic files in: {input_path}")
 

@@ -13,7 +13,6 @@ from typing import Any, Optional
 
 from ..connectivity_builder import ConnectivityGraph, NetConnection
 from ..constants import DEFAULT_NET_TYPE
-from ..kicad.netlist_parser import NetlistComponent, NetlistNet
 from ..project_indexer import ProjectIndex
 from .netlist_dat_parser import find_netlist_dir, build_pin_net_map_from_dat, parse_pstxprt
 from .xml_parser import CadenceXMLParser
@@ -132,71 +131,3 @@ class CadenceConnectivityBuilder:
             component_nets=component_nets,
             warnings=warnings,
         )
-
-    def parse_file_compat(self, root_schematic: str | Path) -> dict[str, Any]:
-        """Return a dict compatible with NetlistParser._parse_file() output.
-
-        This enables ConnectivityBuilder.build() to use Cadence data with
-        minimal code changes.
-        """
-        root_path = Path(root_schematic).resolve()
-        pin_net_map, source, parser, _netlist_dir = self._get_pin_net_map(root_path)
-        components_dict: dict[str, NetlistComponent] = {}
-        nets_dict: dict[str, NetlistNet] = {}
-
-        # Build NetlistComponent objects
-        # Guard XML parsing — parser may be None when .dat source is used and XML is unavailable
-        xml_components = []
-        if parser is not None:
-            try:
-                xml_components = parser.get_components()
-            except (FileNotFoundError, ValueError):
-                pass
-
-        for comp in xml_components:
-            ref = comp.reference.upper()
-            lib_id = comp.library_id or ""
-            pin_nets = pin_net_map.get(ref, {})
-
-            components_dict[ref] = NetlistComponent(
-                reference=ref,
-                value=comp.value,
-                library=lib_id,
-                sheet_instance_path="/",
-                footprint=comp.footprint,
-                pins=dict(pin_nets),
-                units=[],
-            )
-
-        # For components in .dat but not in XML, create minimal entries
-        if source == "pstxnet.dat":
-            for ref in pin_net_map:
-                if ref not in components_dict:
-                    components_dict[ref] = NetlistComponent(
-                        reference=ref,
-                        value="",
-                        library="",
-                        sheet_instance_path="/",
-                        footprint="",
-                        pins=dict(pin_net_map[ref]),
-                        units=[],
-                    )
-
-        # Build NetlistNet objects
-        net_pins = self._aggregate_net_pins(pin_net_map)
-
-        code = 0
-        for net_name, pins in net_pins.items():
-            nets_dict[net_name] = NetlistNet(
-                name=net_name,
-                code=code,
-                pins=pins,
-            )
-            code += 1
-
-        return {
-            "components": components_dict,
-            "nets": nets_dict,
-            "ref_to_instances": {ref: [ref] for ref in sorted(components_dict)},
-            "warnings": [],
-        }

@@ -861,14 +861,21 @@ class CadenceXMLParser:
                     if k not in merged_props:
                         merged_props[k] = v
 
-            # Extract MPN
-            mpn = (merged_props.get("Manufacturer Part Number", "") or
-                   merged_props.get("MPN", ""))
+            # Extract MPN (prefer explicit MPN field, fallback to Manufacturer Part Number)
+            mpn = (merged_props.get("MPN", "") or
+                   merged_props.get("Manufacturer Part Number", ""))
 
             # Build properties dict matching KiCad convention
             props = dict(merged_props)
             if mpn:
-                props["MPN"] = mpn
+                # Remove Manufacturer Part Number if it duplicates MPN
+                if props.get("Manufacturer Part Number") == mpn:
+                    del props["Manufacturer Part Number"]
+                # Remove MPN from properties if it duplicates component value (common for ICs)
+                if primary.value == mpn and "MPN" in props:
+                    del props["MPN"]
+                else:
+                    props["MPN"] = mpn
 
             lib_id = primary.lib_name.split("\\")[-1] if primary.lib_name else ""
             if primary.pkg_name:

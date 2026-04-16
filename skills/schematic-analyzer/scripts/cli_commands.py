@@ -66,11 +66,7 @@ def cmd_query(args):
         }
         # Try to extract suggestion for not_found errors
         if "Did you mean" in error_msg:
-            try:
-                suggestion = error_msg.split("Did you mean '")[1].split("'")[0]
-                error_payload["suggestion"] = suggestion
-            except (IndexError, ValueError):
-                pass
+            error_payload["suggestion"] = error_msg.split("Did you mean '")[1].rstrip("'?")
         write_json_output(error_payload, args.output)
         return 1
 

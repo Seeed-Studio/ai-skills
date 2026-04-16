@@ -8,8 +8,11 @@ Phase 3: Topology extraction
 """
 
 import json
+import os
 import re
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +27,6 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from cache_manager import CacheManager
 from tools.connectivity_builder import ConnectivityBuilder
 from tools.core_ranker import rank_core_candidates
-from tools.constants import DEFAULT_QUERY_LIMIT as _CONST_QUERY_LIMIT
 from tools.overlay_interpreter import OverlayInterpreter
 from tools.project_indexer import ProjectIndexer
 from tools.scope_resolver import ScopeResolver
@@ -48,7 +50,7 @@ class AnalysisResult:
 class SchematicAnalyzer:
     """Main analyzer class for KiCad schematics."""
 
-    DEFAULT_QUERY_LIMIT = _CONST_QUERY_LIMIT
+    DEFAULT_QUERY_LIMIT = 10
 
     def __init__(
         self,
@@ -79,7 +81,6 @@ class SchematicAnalyzer:
         self._project_index = None
         self._overlay_interpreter = None
         self._synthesis_engine = None
-        self._connectivity_graph = None
         self._components = []
         self._nets = []
         self._hierarchy = []
@@ -402,12 +403,7 @@ class SchematicAnalyzer:
                 sha256.update(child.read_bytes())
 
     def _compute_structural_context_signature(self) -> str:
-        """Compute a stable signature for structural-only inputs.
-
-        TODO: incorporate schematic content hash (component count, net topology
-        fingerprint, key component references) so structural cache keys actually
-        distinguish different designs.
-        """
+        """Compute a stable signature for structural-only inputs."""
         return ""
 
     def _compute_yaml_signature(self) -> str:
@@ -526,9 +522,6 @@ class SchematicAnalyzer:
             "project_overview": {
                 "project_page_count": len(page_navigation),
                 "project_component_count": len(self.project_index.components),
-                "project_active_component_count": sum(
-                    1 for c in self.project_index.components.values() if not c.flags.get("dnp")
-                ),
                 "project_net_count": len(phase_1["nets"]),
                 "root_schematic_filename": self.scope.root_schematic.name,
                 "referenced_page_count": len(self.scope.referenced_sheets),
@@ -617,14 +610,18 @@ class SchematicAnalyzer:
         if not include_full:
             nets = self._merge_multipad_pins(nets)
 
-        return {
+        # Merge same-net entries into one (e.g. GND pins "2,3,6,7")
+        nets = self._merge_same_net_pins(nets)
+        mpn = self._component_mpn(component)
+
+        payload = {
             "query_type": "component",
             "ref": component.reference,
             "value": component.value,
-            "mpn": self._component_mpn(component),
+            "mpn": mpn,
             "page_index": page_index,
             "page_name": self._sheet_name_from_path(sheet_path),
-            "properties": dict(component.properties),
+            "properties": self._dedup_properties(component, mpn),
             "nets": nets,
             "neighbors": self._build_neighbors_payload(
                 ref,
@@ -632,6 +629,7 @@ class SchematicAnalyzer:
                 sheet_path,
             ),
         }
+        return payload
 
     def query_component_match(self, text: str, *, include_all: bool = False) -> dict[str, Any]:
         """Search components by text (supports regex)."""
@@ -659,13 +657,14 @@ class SchematicAnalyzer:
             else:
                 if wanted not in haystack.lower():
                     continue
-            matches.append(
-                {
-                    "ref": component.reference,
-                    "value": component.value,
-                    "mpn": self._component_mpn(component),
-                }
-            )
+            mpn = self._component_mpn(component)
+            match_entry = {
+                "ref": component.reference,
+                "value": component.value,
+            }
+            if mpn:
+                match_entry["mpn"] = mpn
+            matches.append(match_entry)
         shown, truncated = self._truncate_items(matches, include_all=include_all)
         return {
             "query_type": "component",
@@ -917,6 +916,7 @@ class SchematicAnalyzer:
                 }
             )
 
+        net_names_in_graph: set[str] = set(graph.all_nets.keys())
         entity_buckets: dict[tuple[str, str], dict[str, Any]] = {}
         for schematic_file in self._get_analysis_schematic_paths():
             parser = self._get_local_parser(schematic_file)
@@ -927,6 +927,10 @@ class SchematicAnalyzer:
                     continue
                 entity_name = str(entity.get("name", "")).strip()
                 if not entity_name:
+                    continue
+                # Skip label entities whose name already exists as a net —
+                # the net entry already carries complete pin/page information.
+                if entity_name in net_names_in_graph:
                     continue
                 key = (entity_name, kind)
                 bucket = entity_buckets.setdefault(
@@ -1054,11 +1058,14 @@ class SchematicAnalyzer:
         }
 
     def _component_summary(self, component) -> dict[str, Any]:
-        return {
+        entry = {
             "ref": component.reference,
             "value": component.value,
-            "mpn": self._component_mpn(component),
         }
+        mpn = self._component_mpn(component)
+        if mpn:
+            entry["mpn"] = mpn
+        return entry
 
     def _component_mpn(self, component) -> str | None:
         properties = getattr(component, "properties", {}) or {}
@@ -1070,6 +1077,17 @@ class SchematicAnalyzer:
         if value:
             return str(value)
         return None
+
+    def _dedup_properties(self, component, top_mpn: str | None) -> dict[str, Any]:
+        """Remove redundant MPN fields from properties that duplicate top-level mpn or value."""
+        props = dict(getattr(component, "properties", {}) or {})
+        if not top_mpn:
+            return props
+        # Remove MPN/Manufacturer Part Number from properties if it matches top-level mpn
+        for key in ("MPN", "Manufacturer Part Number"):
+            if key in props and str(props[key]) == top_mpn:
+                del props[key]
+        return props
 
     def _truncate_items(self, items: list[dict[str, Any]], *, include_all: bool) -> tuple[list[dict[str, Any]], bool]:
         if include_all or len(items) <= self.DEFAULT_QUERY_LIMIT:
@@ -1208,6 +1226,29 @@ class SchematicAnalyzer:
                 merged.extend(entries)
         return merged
 
+    @staticmethod
+    def _merge_same_net_pins(nets: list[dict[str, str]]) -> list[dict[str, str]]:
+        """Merge entries sharing the same net name into one with comma-separated pins."""
+        if not nets:
+            return nets
+        merged: list[dict[str, str]] = []
+        groups: dict[str, list[dict[str, str]]] = {}
+        order: list[str] = []
+        for entry in nets:
+            name = entry["name"]
+            if name not in groups:
+                groups[name] = []
+                order.append(name)
+            groups[name].append(entry)
+        for name in order:
+            entries = groups[name]
+            if len(entries) == 1:
+                merged.append(entries[0])
+            else:
+                pins = ",".join(e["pin"] for e in entries)
+                merged.append({"name": name, "pin": pins})
+        return merged
+
     def _pin_name(self, component, pin_number: str, dat_source: bool = False) -> str:
         if dat_source:
             # DAT source (pstxnet.dat): pin_number is a physical pin identifier
@@ -1275,9 +1316,6 @@ class SchematicAnalyzer:
         comp_dicts: list[dict[str, Any]] = []
         for component in self.project_index.components.values():
             connected_nets = []
-            # instance_id is always equal to the uppercase reference designator
-            # (set during indexing in ProjectIndexer.build). component_nets is
-            # also keyed by uppercase reference, so this lookup is correct.
             if component_nets and component.instance_id in component_nets:
                 connected_nets = sorted(
                     {
@@ -1314,13 +1352,8 @@ class SchematicAnalyzer:
         """Phase 1: Netlist semantic parsing.
 
         Uses kicad-cli to export netlist and parse for accurate pin-level connectivity.
-        Result is cached on the instance to avoid redundant rebuilds.
         """
-        if self._connectivity_graph is not None:
-            graph = self._connectivity_graph
-        else:
-            graph = ConnectivityBuilder().build(self.project_index, self.schematic_path)
-            self._connectivity_graph = graph
+        graph = ConnectivityBuilder().build(self.project_index, self.schematic_path)
 
         net_dicts = []
         for net_name in sorted(graph.all_nets):
@@ -1355,6 +1388,45 @@ class SchematicAnalyzer:
             "netlist_available": graph.netlist_available,
             "connectivity_warnings": list(graph.warnings),
         }
+
+    def _export_netlist(self) -> Optional[Path]:
+        """Export netlist using kicad-cli.
+
+        Returns:
+            Path to exported netlist or None if failed
+        """
+        import subprocess
+        import tempfile
+
+        try:
+            # Create temp file for netlist
+            fd, temp_path = tempfile.mkstemp(suffix=".xml")
+            os.close(fd)
+
+            # Run kicad-cli to export netlist
+            result = subprocess.run(
+                [
+                    "kicad-cli", "sch", "export", "netlist",
+                    "--format", "kicadxml",
+                    "-o", temp_path,
+                    str(self.schematic_path)
+                ],
+                capture_output=True,
+                timeout=60,
+            )
+
+            if result.returncode == 0:
+                return Path(temp_path)
+            else:
+                print(f"kicad-cli netlist export failed: {result.stderr}", file=sys.stderr)
+                return None
+
+        except FileNotFoundError:
+            print("kicad-cli not found, skipping netlist export", file=sys.stderr)
+            return None
+        except Exception as e:
+            print(f"Netlist export error: {e}", file=sys.stderr)
+            return None
 
     def _run_phase_2(
         self,
@@ -1486,11 +1558,11 @@ class SchematicAnalyzer:
                 for p in sub.get("participants", []):
                     ref = p.get("ref", "")
                     if ref:
-                        participant_refs.add(ref.upper())
+                        participant_refs.add(ref)
                 # Collect controller ref
                 ctrl = sub.get("controller", {})
                 if ctrl and ctrl.get("ref"):
-                    participant_refs.add(ctrl.get("ref").upper())
+                    participant_refs.add(ctrl.get("ref"))
 
         # Filter components to those in focused subsystems
         if participant_refs:

@@ -37,12 +37,7 @@ def print_overview_summary(payload: dict) -> None:
     project = payload["project_overview"]
     print("Project Overview")
     print(f"Project Pages: {project['project_page_count']}")
-    active = project.get('project_active_component_count')
-    total = project['project_component_count']
-    if active is not None and active != total:
-        print(f"Project Components: {active} active / {total} total ({total - active} DNP)")
-    else:
-        print(f"Project Components: {total}")
+    print(f"Project Components: {project['project_component_count']}")
     print(f"Project Nets: {project['project_net_count']}")
     print(f"Root Schematic: {project['root_schematic_filename']}")
     print(f"Referenced Pages: {project['referenced_page_count']}")
