@@ -14,7 +14,7 @@ from typing import Any, Optional
 from ..connectivity_builder import ConnectivityGraph, NetConnection
 from ..constants import DEFAULT_NET_TYPE
 from ..project_indexer import ProjectIndex
-from .netlist_dat_parser import find_netlist_dir, build_pin_net_map_from_dat, parse_pstxprt
+from .netlist_dat_parser import find_netlist_dir, build_pin_net_map_from_dat, parse_pstxprt, parse_pstchip
 from .xml_parser import CadenceXMLParser
 
 
@@ -73,10 +73,14 @@ class CadenceConnectivityBuilder:
 
         # Try to load page information from pstxprt.dat
         page_info: dict[str, dict] = {}
+        pin_number_map: dict[str, dict[str, str]] = {}  # PART_NAME -> {pin_func -> physical_pin}
         if source == "pstxnet.dat" and netlist_dir is not None:
             pstxprt_file = netlist_dir / "pstxprt.dat"
             if pstxprt_file.exists():
                 page_info = parse_pstxprt(pstxprt_file)
+            pstchip_file = netlist_dir / "pstchip.dat"
+            if pstchip_file.exists():
+                pin_number_map = parse_pstchip(pstchip_file)
 
         all_nets_data: dict[str, NetConnection] = {}
         component_nets: dict[str, dict] = {}
@@ -99,12 +103,20 @@ class CadenceConnectivityBuilder:
             if ref in page_info:
                 sheet_path = page_info[ref]["page"]
 
+            # Resolve physical pin numbers from pstchip.dat via PART_NAME
+            comp_pin_map: dict[str, str] = {}
+            if comp and pin_number_map:
+                part_name = self._extract_part_name(comp.lib_id)
+                if part_name and part_name in pin_number_map:
+                    comp_pin_map = pin_number_map[part_name]
+
             component_nets[ref] = {
                 "pins": dict(pin_nets),
                 "pin_count": len(pin_nets),
                 "reference": ref,
                 "sheet_path": sheet_path,
                 "dat_source": source == "pstxnet.dat",
+                "pin_number_map": comp_pin_map,
             }
 
         # Build all_nets: aggregate pins per net
@@ -131,3 +143,14 @@ class CadenceConnectivityBuilder:
             component_nets=component_nets,
             warnings=warnings,
         )
+
+    @staticmethod
+    def _extract_part_name(library_id: str) -> str:
+        """Extract PART_NAME from a Cadence library_id.
+
+        Cadence library_id format: ``LIB_NAME.OLB:PART_NAME``
+        e.g. ``RK_IC.OLB:PMIC_RK806S-5`` → ``PMIC_RK806S-5``
+        """
+        if ':' in library_id:
+            return library_id.split(':', 1)[1]
+        return library_id
