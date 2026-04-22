@@ -379,3 +379,101 @@ def build_pin_net_map_from_dat(netlist_dir: Path) -> dict[str, dict[str, str]]:
         return {}
 
     return parse_pstxnet(pstxnet_file)
+
+
+def parse_pstchip(file_path: Path) -> dict[str, dict[str, str]]:
+    r"""Parse Allegro pstchip.dat to extract pin-function-to-physical-pin mapping.
+
+    The pstchip.dat file defines library part primitives with pin sections that
+    map functional pin names (e.g. ``VOUT1``, ``NLDO1``) to physical pin numbers
+    via ``PIN_NUMBER='(...)'`` tuples.
+
+    PIN_NUMBER tuple formats:
+      - Simple: ``PIN_NUMBER='(1)'`` → physical pin 1
+      - Complex: ``PIN_NUMBER='(49,0,0)'`` → first non-zero element = pin 49
+      - Complex: ``PIN_NUMBER='(0,14,0)'`` → first non-zero element = pin 14
+
+    The result is indexed by ``PART_NAME`` so callers can look up a component's
+    pin map using the part name extracted from its library_id.
+
+    Args:
+        file_path: Path to pstchip.dat file.
+
+    Returns:
+        Dictionary mapping ``{PART_NAME: {pin_function_name: physical_pin_number}}``.
+        Pin function names have Cadence escape sequences (``\\X\\``) stripped.
+        Returns empty dict if file not found.
+    """
+    pin_map: dict[str, dict[str, str]] = {}
+
+    if not file_path.is_file():
+        return pin_map
+
+    content = file_path.read_text(encoding='utf-8', errors='ignore')
+    lines = content.split('\n')
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        # Look for primitive block start: primitive 'NAME';
+        if line.startswith('primitive'):
+            prim_match = re.match(r"primitive\s+'([^']+)'", line)
+            if prim_match:
+                current_pins: dict[str, str] = {}
+                current_part_name: str | None = None
+                in_pin_section = False
+                i += 1
+
+                while i < len(lines):
+                    inner = lines[i].strip()
+
+                    if inner.startswith('end_primitive'):
+                        # Save if we have a PART_NAME
+                        if current_part_name and current_pins:
+                            pin_map[current_part_name] = current_pins
+                        break
+
+                    if inner == 'pin':
+                        in_pin_section = True
+                        i += 1
+                        continue
+
+                    if inner == 'end_pin':
+                        in_pin_section = False
+                        i += 1
+                        continue
+
+                    if in_pin_section:
+                        # Pin function name line: '\VOUT1\':
+                        # or for simple parts: '1':
+                        pin_name_match = re.match(r"'([^']+)'\s*:", inner)
+                        if pin_name_match:
+                            raw_pin_name = _clean_pin_escape(pin_name_match.group(1))
+                            # Look ahead for PIN_NUMBER on the next line
+                            if i + 1 < len(lines):
+                                next_line = lines[i + 1].strip()
+                                pn_match = re.search(r"PIN_NUMBER\s*=\s*'\(([^)]+)\)'", next_line)
+                                if pn_match:
+                                    tuple_str = pn_match.group(1)
+                                    # Extract first non-zero element as physical pin number
+                                    parts = tuple_str.split(',')
+                                    pin_num = ""
+                                    for p in parts:
+                                        p = p.strip()
+                                        if p and p != '0':
+                                            pin_num = p
+                                            break
+                                    if pin_num:
+                                        current_pins[raw_pin_name] = pin_num
+
+                    # Look for PART_NAME in body section
+                    if inner.startswith('PART_NAME'):
+                        pn_match = re.search(r"PART_NAME\s*=\s*'([^']+)'", inner)
+                        if pn_match:
+                            current_part_name = pn_match.group(1)
+
+                    i += 1
+        i += 1
+
+    return pin_map

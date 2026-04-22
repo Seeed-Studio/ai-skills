@@ -584,6 +584,7 @@ class SchematicAnalyzer:
 
         nets: list[dict[str, str]] = []
         seen_net_pairs: set[tuple[str, str]] = set()
+        comp_pin_map = phase_1["component_nets"].get(ref, {}).get("pin_number_map", {})
         for pin_number, net_name in sorted(phase_1["component_nets"].get(ref, {}).get("pins", {}).items()):
             if not include_full and str(net_name).startswith("unconnected-"):
                 continue
@@ -597,6 +598,10 @@ class SchematicAnalyzer:
                 "name": pair[0],
                 "pin": pair[1],
             }
+            # Add physical pin number from pstchip.dat
+            phys_pin = comp_pin_map.get(pin_name)
+            if phys_pin:
+                entry["pin_number"] = phys_pin
             # Annotate GPIO ball-name pins with their signal function
             if (
                 is_dat
@@ -1221,7 +1226,13 @@ class SchematicAnalyzer:
                 base = re.sub(r"#\w+$", "", e["pin"])
                 base_names.add(base)
             if len(base_names) == 1:
-                merged.append({"name": net_name, "pin": f"{base_names.pop()} ×{len(entries)}"})
+                base = base_names.pop()
+                result = {"name": net_name, "pin": f"{base} ×{len(entries)}"}
+                # Preserve pin_number if all entries share the same one
+                pin_nums = {e.get("pin_number") for e in entries if "pin_number" in e}
+                if len(pin_nums) == 1:
+                    result["pin_number"] = pin_nums.pop()
+                merged.append(result)
             else:
                 merged.extend(entries)
         return merged
@@ -1246,7 +1257,12 @@ class SchematicAnalyzer:
                 merged.append(entries[0])
             else:
                 pins = ",".join(e["pin"] for e in entries)
-                merged.append({"name": name, "pin": pins})
+                result: dict[str, str] = {"name": name, "pin": pins}
+                # Preserve pin_number as comma-separated if present
+                pin_nums = [e["pin_number"] for e in entries if "pin_number" in e]
+                if pin_nums:
+                    result["pin_number"] = ",".join(pin_nums)
+                merged.append(result)
         return merged
 
     def _pin_name(self, component, pin_number: str, dat_source: bool = False) -> str:
