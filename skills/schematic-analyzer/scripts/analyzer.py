@@ -710,13 +710,18 @@ class SchematicAnalyzer:
             component_sheet_paths.add(sheet_path)
             if page_name not in pages:
                 pages.append(page_name)
-            is_dat = graph.component_nets.get(ref, {}).get("dat_source", False)
+            is_dat = comp_nets.get("dat_source", False)
             pin_nm = self._pin_name(component, pin_number, dat_source=is_dat)
             pin_entry: dict[str, str] = {
                 "ref": ref,
                 "pin": pin_nm,
                 "page": page_name,
             }
+            # Add physical pin number from pstchip.dat
+            comp_pin_map = comp_nets.get("pin_number_map", {})
+            phys_pin = comp_pin_map.get(pin_nm)
+            if phys_pin:
+                pin_entry["pin_number"] = phys_pin
             if (
                 is_dat
                 and pin_nm.startswith("GPIO")
