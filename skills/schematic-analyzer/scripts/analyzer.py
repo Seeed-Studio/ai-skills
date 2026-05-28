@@ -888,8 +888,13 @@ class SchematicAnalyzer:
                 "pages": candidate["pages"],
                 "mapped_to_net": candidate["mapped_to_net"],
             }
-            if candidate["pin_count"] is not None:
-                match["pin_count"] = candidate["pin_count"]
+            pin_count = candidate.get("pin_count")
+            if pin_count is None:
+                pins = candidate.get("pins")
+                if isinstance(pins, list):
+                    pin_count = len(pins)
+            if pin_count is not None:
+                match["pin_count"] = pin_count
             matches.append(match)
         shown, truncated = self._truncate_items(matches, include_all=include_all)
         return {
