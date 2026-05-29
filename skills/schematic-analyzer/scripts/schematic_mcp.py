@@ -72,34 +72,46 @@ def _safe(fn: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         if _IMPORT_ERRORS:
             return _err("missing_dependency", _IMPORT_ERRORS[0],
-                        "Install the missing Python package(s) above.")
+                        f"Run: pip install fastmcp && pip install -r "
+                        f"{SCRIPTS_DIR}/requirements.txt")
 
         try:
             result = fn(*args, **kwargs)
             return _json_result(result)
         except FileNotFoundError as e:
             msg = str(e)
+            path_hint = kwargs.get("project", args[0] if args else "<?>")
             if "No supported schematic files" in msg:
                 return _err(
                     "missing_files",
-                    f"No supported schematic files found: {msg.split('in: ')[-1] if 'in: ' in msg else msg}",
-                    "Provide a directory with .kicad_sch files, or for Cadence: "
-                    "pstxnet.dat + pstxprt.dat + OrCAD Capture XML export together.")
+                    msg,
+                    f"Run: ls -la {path_hint}/\n"
+                    "Expected files:\n"
+                    "  KiCad:  *.kicad_sch\n"
+                    "  Cadence: pstxnet.dat + pstxprt.dat + <name>.xml\n"
+                    "Cadence users: in OrCAD Capture, File → Export → XML, then "
+                    "run Allegro netlist export to generate pstxnet.dat and pstxprt.dat.")
             return _err("missing_files", msg,
-                        "Verify the project path exists and contains supported schematic files.")
+                        f"Run: ls -la {path_hint}/\n"
+                        "Then verify the path and try again.")
         except (ValueError, TypeError) as e:
             msg = str(e)
             if "Not a supported schematic file" in msg:
                 return _err(
-                    "invalid_project",
-                    msg,
-                    "Provide a KiCad .kicad_sch file, or a Cadence OrCAD Capture XML export "
-                    "with accompanying pstxnet.dat and pstxprt.dat files.")
+                    "invalid_project", msg,
+                    "Supported formats:\n"
+                    "  KiCad:  point to the .kicad_sch file or project directory\n"
+                    "  Cadence: point to the <name>.xml file or the directory containing "
+                    "pstxnet.dat + pstxprt.dat + <name>.xml\n"
+                    "If you have OrCAD .DSN files, export to XML first: "
+                    "File → Export → XML in OrCAD Capture.")
             return _err("invalid_project", msg,
-                        "Check that the project path points to a valid schematic file.")
+                        "Run: file <path> to check the file type, then point to a supported schematic.")
         except LookupError as e:
             return _err("not_found", str(e),
-                        "Check the spelling of the component reference or net name.")
+                        "Try mcp__sch__comp_search(text=\"<partial name>\") "
+                        "or mcp__sch__net_search(text=\"<partial name>\") "
+                        "to discover the correct name.")
 
     return wrapper
 

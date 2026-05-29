@@ -72,29 +72,40 @@ def _safe(fn: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         if _IMPORT_ERRORS:
             return _err("missing_dependency", _IMPORT_ERRORS[0],
-                        "Install the missing Python package(s) above.")
+                        f"Run: pip install fastmcp && pip install -r "
+                        f"{SCRIPTS_DIR}/requirements.txt")
 
         try:
             result = fn(*args, **kwargs)
         except FileNotFoundError as e:
+            pdf_hint = kwargs.get("pdf", args[0] if args else "<?>")
             return _err("missing_file", str(e),
-                        "Verify the PDF file path is correct and the file exists.")
+                        f"Run: ls -la \"{pdf_hint}\"\n"
+                        "The PDF file was not found. Check the path and try again. "
+                        "If the datasheet is on the manufacturer's website, "
+                        "download it first and place it in a datasheets/ directory.")
         except (ValueError, TypeError) as e:
             msg = str(e)
             if "not a valid PDF" in msg.lower() or "cannot open" in msg.lower():
                 return _err("invalid_file", msg,
+                            f"Run: file \"{kwargs.get('pdf', args[0] if args else '')}\"\n"
                             "The file may be corrupted or not a valid PDF. "
-                            "Try re-downloading or opening with a PDF viewer first.")
+                            "Try re-downloading the datasheet from the manufacturer's website.")
             return _err("invalid_input", msg,
                         "Check the tool parameters. The PDF may require different arguments.")
         except LookupError as e:
             return _err("not_found", str(e),
-                        "The requested content was not found in this PDF.")
+                        "The requested content was not found in this PDF. "
+                        "Try mcp__ds__search() with different keywords, "
+                        "or mcp__ds__toc() to browse the document structure.")
 
         # Check for error dicts returned by pdf_tools functions
         if isinstance(result, dict) and "error" in result:
+            pdf_hint = kwargs.get("pdf", args[0] if args else "")
             return _err("invalid_input", str(result["error"]),
-                        "Verify the PDF file path is correct and the file is a valid PDF.")
+                        f"Run: file \"{pdf_hint}\"\n"
+                        "Verify the file is a valid PDF. "
+                        "Download or re-export the datasheet and try again.")
 
         return _json_result(result)
 
