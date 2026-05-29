@@ -72,8 +72,7 @@ def _safe(fn: Callable) -> Callable:
     def wrapper(*args, **kwargs):
         if _IMPORT_ERRORS:
             return _err("missing_dependency", _IMPORT_ERRORS[0],
-                        f"Run: pip install fastmcp && pip install -r "
-                        f"{SCRIPTS_DIR}/requirements.txt")
+                        f"Run: pip install -r {SCRIPTS_DIR}/requirements.txt")
 
         try:
             result = fn(*args, **kwargs)
