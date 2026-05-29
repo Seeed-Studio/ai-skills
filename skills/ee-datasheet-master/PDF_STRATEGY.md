@@ -50,8 +50,8 @@ Before running any command, decide where to start. `page_hints` on a 100-page PD
 **Purpose:** Build a structural map of the entire document in one pass. Use this when you don't yet know where to look — if the device and parameter are already known, go to Phase 3 instead. `page_hints` on a large datasheet is the slowest operation available; only run it when the structural map will actually inform your next step.
 
 ```bash
-python scripts/pdf_tools.py info <pdf_path>
-python scripts/pdf_tools.py page_hints <pdf_path>   # scan ALL pages
+mcp__ds__info(pdf="<pdf_path>")
+mcp__ds__page_hints(pdf="<pdf_path>")   # scan ALL pages
 ```
 
 `page_hints` returns per-page signals and heuristic labels. Use this to identify candidate pages for each section:
@@ -97,9 +97,9 @@ Use the `info` result already obtained in Phase 0 — no need to re-run.
 
 ```bash
 # Render first 3 pages to identify device
-python scripts/pdf_tools.py render_page <pdf_path> 1 180
-python scripts/pdf_tools.py render_page <pdf_path> 2 180
-python scripts/pdf_tools.py render_page <pdf_path> 3 180
+mcp__ds__render(pdf=<pdf_path> 1 180)
+mcp__ds__render(pdf=<pdf_path> 2 180)
+mcp__ds__render(pdf=<pdf_path> 3 180)
 ```
 
 Read rendered images visually. Cross-validate: manufacturer + part number from image must match filename/context. If mismatch → output `UNABLE TO VERIFY`.
@@ -114,9 +114,9 @@ For image PDFs, use `render_page` for ALL sections. Typical flow:
 ## Phase 2: Device Identification
 
 ```bash
-python scripts/pdf_tools.py text <pdf_path> 1
+mcp__ds__text(pdf=<pdf_path>, page=1)
 # If page 1 is cover only (short text):
-python scripts/pdf_tools.py text <pdf_path> 2
+mcp__ds__text(pdf=<pdf_path>, page=2)
 ```
 
 Extract:
@@ -188,7 +188,7 @@ Skip Phase 2b for simple devices: LDO, discrete MOSFET, gate logic, op-amp, diod
 
 ```bash
 # Step 1: Get default patterns as base (to not lose default coverage)
-python scripts/pdf_tools.py dump_patterns > /tmp/custom_patterns.json
+mcp__ds__patterns() > /tmp/custom_patterns.json
 
 # Step 2: Edit /tmp/custom_patterns.json — ADD new labels with inferred patterns.
 # Do NOT remove existing default keys. Example additions:
@@ -200,7 +200,7 @@ python scripts/pdf_tools.py dump_patterns > /tmp/custom_patterns.json
 # }
 
 # Step 3: Re-scan with custom patterns
-python scripts/pdf_tools.py page_hints <pdf_path> --patterns /tmp/custom_patterns.json
+mcp__ds__page_hints(pdf="<pdf_path>") --patterns /tmp/custom_patterns.json
 ```
 
 ### Merge Results
@@ -220,7 +220,7 @@ Combine pre-scan hints with targeted searches to build a precise section map.
 ### Step 3a: Use Caption Search (Primary)
 
 ```bash
-python scripts/pdf_tools.py search_caption <pdf_path>
+mcp__ds__search_caption(pdf="<pdf_path>")
 ```
 
 Datasheet figure/table captions are the most reliable section locators. Look for:
@@ -234,10 +234,10 @@ Datasheet figure/table captions are the most reliable section locators. Look for
 ### Step 3b: Keyword Search (Backup)
 
 ```bash
-python scripts/pdf_tools.py search <pdf_path> "Absolute Maximum"
-python scripts/pdf_tools.py search <pdf_path> "Electrical Characteristics"
-python scripts/pdf_tools.py search <pdf_path> "Pin Functions"
-python scripts/pdf_tools.py search <pdf_path> "Block Diagram"
+mcp__ds__search(pdf=<pdf_path>, keyword="Absolute Maximum")
+mcp__ds__search(pdf=<pdf_path>, keyword="Electrical Characteristics")
+mcp__ds__search(pdf=<pdf_path>, keyword="Pin Functions")
+mcp__ds__search(pdf=<pdf_path>, keyword="Block Diagram")
 ```
 
 Multi-language keywords:
@@ -254,7 +254,7 @@ Multi-language keywords:
 ### Step 3c: TOC (If Available)
 
 ```bash
-python scripts/pdf_tools.py toc <pdf_path>
+mcp__ds__toc(pdf="<pdf_path>")
 ```
 
 Most datasheets don't have a machine-parseable TOC. Use this as a bonus, not a primary strategy. If it returns entries, cross-check page numbers with Phase 0 hints.
@@ -264,7 +264,7 @@ Most datasheets don't have a machine-parseable TOC. Use this as a bonus, not a p
 For each candidate page, confirm it's the right section:
 
 ```bash
-python scripts/pdf_tools.py text <pdf_path> <page_num>
+mcp__ds__text(pdf="<pdf_path>", page=<page_num>)
 ```
 
 ---
@@ -289,11 +289,11 @@ Before extracting, consider opening **[TEMPLATES.md](TEMPLATES.md)** for structu
 
 ```bash
 # Extract tables from the identified pages
-python scripts/pdf_tools.py tables <pdf_path> <page_num>
+mcp__ds__tables(pdf="<pdf_path>", page=<page_num>)
 
 # Or search directly in tables
-python scripts/pdf_tools.py search_table <pdf_path> "output voltage"
-python scripts/pdf_tools.py search_table <pdf_path> "quiescent current"
+mcp__ds__search_table(pdf=<pdf_path>, keyword="output voltage")
+mcp__ds__search_table(pdf=<pdf_path>, keyword="quiescent current")
 ```
 
 **LLM decision after table extraction:**
@@ -309,17 +309,17 @@ Pin description tables are often multi-page. Read ALL pages of the pin section.
 
 ```bash
 # Find pin section start
-python scripts/pdf_tools.py search <pdf_path> "Pin Functions"
+mcp__ds__search(pdf=<pdf_path>, keyword="Pin Functions")
 
 # Extract tables from each page of the section
-python scripts/pdf_tools.py tables <pdf_path> <page_num>
+mcp__ds__tables(pdf="<pdf_path>", page=<page_num>)
 # Repeat for each subsequent page until pin table ends (increment page number manually)
-python scripts/pdf_tools.py tables <pdf_path> <next_page_num>
+mcp__ds__tables(pdf=<pdf_path>, page=<next_page_num>)
 ```
 
 For the pin diagram (image in all PDFs):
 ```bash
-python scripts/pdf_tools.py render_page <pdf_path> <pinout_diagram_page> 200
+mcp__ds__render(pdf=<pdf_path> <pinout_diagram_page> 200)
 ```
 
 ### 4c. Timing Diagrams
@@ -327,13 +327,13 @@ python scripts/pdf_tools.py render_page <pdf_path> <pinout_diagram_page> 200
 **Timing diagrams are almost always images**, even in text-based PDFs. Never try to extract timing from text.
 
 ```bash
-python scripts/pdf_tools.py render_page <pdf_path> <timing_page> 200
+mcp__ds__render(pdf=<pdf_path> <timing_page> 200)
 ```
 
 For timing parameters (setup/hold/pulse width), these appear as tables alongside the diagram:
 ```bash
-python scripts/pdf_tools.py tables <pdf_path> <timing_page>
-python scripts/pdf_tools.py nearby_text <pdf_path> <timing_page> "t[SHDWRCP]" 3
+mcp__ds__tables(pdf=<pdf_path>, page=<timing_page>)
+mcp__ds__nearby(pdf=<pdf_path>, page=<timing_page>, pattern="t[SHDWRCP]", context_lines=3)
 ```
 
 ### 4d. Inline Parameter Extraction
@@ -341,8 +341,8 @@ python scripts/pdf_tools.py nearby_text <pdf_path> <timing_page> "t[SHDWRCP]" 3
 Some parameters appear inline in text, not in tables (especially in Chinese datasheets):
 
 ```bash
-python scripts/pdf_tools.py nearby_text <pdf_path> <page_num> "output voltage" 2
-python scripts/pdf_tools.py nearby_text <pdf_path> <page_num> "V[oO][uU][tT]\s*=?\s*[\d\.]+" 2
+mcp__ds__nearby(pdf=<pdf_path>, page=<page_num>, pattern="output voltage", context_lines=2)
+mcp__ds__nearby(pdf=<pdf_path>, page=<page_num>, pattern="V[oO][uU][tT]\s*=?\s*[\d\.]+", context_lines=2)
 ```
 
 ### 4e. Application Circuit & Block Diagram
@@ -350,7 +350,7 @@ python scripts/pdf_tools.py nearby_text <pdf_path> <page_num> "V[oO][uU][tT]\s*=
 Always image. Render and read visually:
 
 ```bash
-python scripts/pdf_tools.py render_page <pdf_path> <page_num> 180
+mcp__ds__render(pdf=<pdf_path> <page_num> 180)
 ```
 
 These pages provide design context: recommended external components, power sequencing, PCB layout hints. Do NOT skip them even if specs are already extracted.
@@ -358,8 +358,8 @@ These pages provide design context: recommended external components, power seque
 ### 4f. Package Information
 
 ```bash
-python scripts/pdf_tools.py render_page <pdf_path> <package_page> 200
-python scripts/pdf_tools.py tables <pdf_path> <package_page>  # for dimension tables
+mcp__ds__render(pdf=<pdf_path> <package_page> 200)
+mcp__ds__tables(pdf=<pdf_path> <package_page>  # for dimension, page=tables)
 ```
 
 Record: package type, pin count, exposed pad (if any), land pattern reference.
@@ -460,21 +460,21 @@ Priority order:
 
 ```bash
 # 1. Confirm image-based
-python scripts/pdf_tools.py info <pdf_path>
+mcp__ds__info(pdf="<pdf_path>")
 # → is_text_based: false
 
 # 2. Render cover pages
-python scripts/pdf_tools.py render_page <pdf_path> 1 180
-python scripts/pdf_tools.py render_page <pdf_path> 2 180
+mcp__ds__render(pdf=<pdf_path> 1 180)
+mcp__ds__render(pdf=<pdf_path> 2 180)
 
 # 3. Identify device from rendered images (visual reading)
 # Cross-validate: part number + manufacturer must match context
 
 # 4. Pre-scan with page_hints (works on image PDFs via text layer detection)
-python scripts/pdf_tools.py page_hints <pdf_path>
+mcp__ds__page_hints(pdf="<pdf_path>")
 
 # 5. Render candidate pages for each section
-python scripts/pdf_tools.py render_page <pdf_path> <page> 200
+mcp__ds__render(pdf=<pdf_path> <page> 200)
 
 # 6. Extract specs visually from rendered images
 # All image PDF extractions → confidence: LOW

@@ -10,10 +10,9 @@ compatibility: Requires python3 and the Python packages listed in scripts/requir
 
 ### Step 1: Confirm the required inputs and environment
 
-Before using `scripts/pdf_tools.py`:
 - Require a valid PDF path
-- Require `python3`
-- Require the Python packages used by `scripts/pdf_tools.py`
+- Require `python3` (Windows: `python`)
+- MCP server `ds` must be configured in `.claude/mcp.json`
 
 If a required dependency or input is missing:
 - Stop before claiming the skill is usable for this task
@@ -101,35 +100,45 @@ Tailor the recommendation to the specific parameter and context — a thermal re
 
 **See [PDF_STRATEGY.md](PDF_STRATEGY.md) for the entry-point decision table and detailed workflow. Read that first — it tells you which phase to start at before running any command.**
 
+### MCP Tools
+
+Server: `ds` — invoke as `mcp__ds__<tool>(...)`.
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__ds__info(pdf)` | PDF metadata: pages, title, author |
+| `mcp__ds__search(pdf, keyword)` | Full-text search across entire PDF |
+| `mcp__ds__search_table(pdf, keyword)` | Search inside tables only |
+| `mcp__ds__text(pdf, page)` | Extract plain text from a page |
+| `mcp__ds__tables(pdf, page)` | Extract tables from a page |
+| `mcp__ds__toc(pdf)` | Table of contents / outline |
+| `mcp__ds__page_hints(pdf)` | Scan for register maps, pinouts, specs |
+| `mcp__ds__page_stats(pdf)` | Text density, table count per page |
+| `mcp__ds__search_caption(pdf)` | Figure/table caption search |
+| `mcp__ds__nearby(pdf, page, pattern)` | Text near a pattern match |
+| `mcp__ds__render(pdf, page)` | Render page to PNG image |
+| `mcp__ds__patterns()` | Dump built-in search patterns |
+
 ### Quick Reference
 
-**Most common case — device named, 1–2 specific parameters asked (start here):**
-```bash
-# Phase 3: Search directly for the parameter the user asked about
-python scripts/pdf_tools.py search_table <pdf_path> "<parameter>"   # e.g. "quiescent current", "dropout voltage"
-python scripts/pdf_tools.py search <pdf_path> "<parameter>"         # try alternate phrasings if first is empty
+**Most common — device named, 1–2 specific parameters:**
+```
+mcp__ds__search_table(pdf="<path>", keyword="<parameter>")
+mcp__ds__search(pdf="<path>", keyword="<parameter>")       # alternate phrasing
 
-# Phase 4: Read the identified page
-python scripts/pdf_tools.py text <pdf_path> <page_num>
-python scripts/pdf_tools.py tables <pdf_path> <page_num>
+mcp__ds__text(pdf="<path>", page=<n>)
+mcp__ds__tables(pdf="<path>", page=<n>)
 ```
 
-**Less common — unknown PDF, open-ended analysis, or complex multi-parameter extraction:**
-```bash
-# Phase 0: Pre-scan (slow — only when you need a structural map)
-python scripts/pdf_tools.py info <pdf_path>
-python scripts/pdf_tools.py page_hints <pdf_path>        # scan ALL pages → minutes on large docs
+**Less common — unknown PDF, open-ended analysis:**
+```
+mcp__ds__info(pdf="<path>")
+mcp__ds__page_hints(pdf="<path>")                           # scan all pages
 
-# Phase 2: Identify Device (only if device is not already known)
-python scripts/pdf_tools.py text <pdf_path> 1
+mcp__ds__text(pdf="<path>", page=1)                         # identify device
 
-# Phase 2b: Targeted re-scan (complex ICs only — charger, MCU, CODEC)
-python scripts/pdf_tools.py dump_patterns > /tmp/custom_patterns.json
-python scripts/pdf_tools.py page_hints <pdf_path> --patterns /tmp/custom_patterns.json
-
-# Phase 3: Caption-based section mapping
-python scripts/pdf_tools.py search_caption <pdf_path>    # find Figure/Table captions
-python scripts/pdf_tools.py search <pdf_path> "Electrical Characteristics"
+mcp__ds__search_caption(pdf="<path>")                       # section mapping
+mcp__ds__search(pdf="<path>", keyword="Electrical Characteristics")
 ```
 
 ---
@@ -156,7 +165,7 @@ After identifying the device, infer what specs matter:
 1. Read device description (first 3 pages)
 2. Understand: What does this device DO?
 3. Infer: What specs matter for this device?
-4. Search: Use pdf_tools to locate those specs
+4. Search: Use MCP tools to locate those specs
 ```
 
 For the complete device-type → key specs lookup table and per-device extraction shortcuts, see **[PDF_STRATEGY.md → Phase 2 and Device-Type Shortcuts](PDF_STRATEGY.md)**.
@@ -247,4 +256,5 @@ If you think:
 |------|---------|
 | [PDF_STRATEGY.md](PDF_STRATEGY.md) | 6-phase workflow, device-type extraction shortcuts |
 | [TEMPLATES.md](TEMPLATES.md) | Structured output templates: device_info, power_domains, I2C, SPI, electrical_specs |
-| [scripts/pdf_tools.py](scripts/pdf_tools.py) | PDF extraction tools |
+| [scripts/pdf_tools.py](scripts/pdf_tools.py) | PDF extraction tools (legacy CLI) |
+| [scripts/datasheet_mcp.py](scripts/datasheet_mcp.py) | MCP server (FastMCP) |

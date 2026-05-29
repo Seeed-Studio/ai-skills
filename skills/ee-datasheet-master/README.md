@@ -28,7 +28,7 @@ See [PDF_STRATEGY.md](PDF_STRATEGY.md) for the complete workflow with decision r
 
 ## Dependencies
 
-`scripts/pdf_tools.py` requires the following Python packages:
+MCP server `datasheet_mcp.py` requires: (Windows: use `python` instead of `python3`)
 
 ```bash
 pip install -r scripts/requirements.txt
@@ -50,7 +50,7 @@ pymupdf (MuPDF) is the primary engine because it:
 
 ---
 
-## Tools (`scripts/pdf_tools.py`)
+## Tools
 
 | Command | Purpose |
 |---------|---------|
@@ -120,4 +120,4 @@ Hints are heuristic. Generic words like `"sequence"` or `"efficiency"` can fire 
 | `SKILL.md` | Skill trigger rules, iron law, quick reference |
 | `PDF_STRATEGY.md` | Full 6-phase workflow with decision trees and device-type shortcuts |
 | `TEMPLATES.md` | JSON extraction templates (device info, power domains, I2C, electrical specs) |
-| `scripts/pdf_tools.py` | PDF extraction tool — all commands listed above |
+| `mcp__ds__*` | MCP tools — see SKILL.md for full reference |
