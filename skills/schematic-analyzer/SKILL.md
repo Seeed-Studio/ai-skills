@@ -56,6 +56,23 @@ Use this escalation order:
 3. `ee-datasheet-master` for pin functions or electrical behavior
 4. Re-ground the conclusion back to the schematic evidence
 
+### Step 4: Handle errors — STOP, don't work around
+
+All MCP tools return `{"error": true, "type": "...", "message": "...", "fix": "..."}` when something is wrong. When you see this:
+
+1. **STOP immediately.** Do NOT try another approach, guess data, or "try anyway."
+2. **Relay the `fix` field verbatim to the user** — it tells them exactly what to install or correct.
+3. **Do not proceed** until the user confirms the fix is applied.
+
+Common error types and what they mean:
+
+| `type` | Meaning |
+|--------|---------|
+| `missing_dependency` | Python package not installed (fastmcp, yaml, etc.) |
+| `missing_files` | Required schematic files not found (e.g. Cadence needs pstxnet.dat + pstxprt.dat + XML) |
+| `invalid_project` | Path exists but doesn't contain a supported schematic |
+| `not_found` | Component reference or net name doesn't exist |
+
 ### Iron Rule
 
 **Accuracy and evidence override coverage. Every claim requires direct evidence of the matching type.**

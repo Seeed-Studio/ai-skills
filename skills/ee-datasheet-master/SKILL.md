@@ -23,6 +23,24 @@ If a required dependency or input is missing:
 
 All factual output must come from the PDF itself. If the PDF cannot provide the answer, return `NOT SPECIFIED IN DATASHEET` and explain the most direct way to obtain that information.
 
+### Step 3: Handle errors — STOP, don't work around
+
+All MCP tools return `{"error": true, "type": "...", "message": "...", "fix": "..."}` when something is wrong. When you see this:
+
+1. **STOP immediately.** Do NOT try another approach, guess data, or "try anyway."
+2. **Relay the `fix` field verbatim to the user** — it tells them exactly what to install or correct.
+3. **Do not proceed** until the user confirms the fix is applied.
+
+Common error types:
+
+| `type` | Meaning |
+|--------|---------|
+| `missing_dependency` | Python package not installed (fastmcp, pymupdf, pdfplumber, etc.) |
+| `missing_file` | PDF file not found at the given path |
+| `invalid_file` | File exists but is not a valid PDF (corrupted or wrong format) |
+| `invalid_input` | Bad parameters passed to the tool |
+| `not_found` | Content not found in the PDF |
+
 ## Iron Law: PDF Content Only
 
 ```
