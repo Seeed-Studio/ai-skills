@@ -1,6 +1,9 @@
 # EE Datasheet Master Dependencies
 # Install: pip install -r requirements.txt
 
+# Required - MCP server framework
+fastmcp>=2.0
+
 # Required - Primary PDF engine (handles CID-encoded fonts)
 pymupdf>=1.23.0
 

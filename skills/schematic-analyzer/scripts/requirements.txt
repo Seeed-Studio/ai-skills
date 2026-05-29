@@ -1,6 +1,9 @@
 # Schematic Analyzer Dependencies
 # Install: pip install -r requirements.txt
 
+# Required - MCP server framework
+fastmcp>=2.0
+
 # Required - Pattern YAML loading for bus detection (I2C/SPI/UART/USB)
 pyyaml>=6.0
 
