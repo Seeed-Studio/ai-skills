@@ -31,7 +31,7 @@ Structure first, semantics when blocked.
 ### Step 1: Confirm the required environment
 
 Before analyzing a project, confirm the inputs and runtime needed for that file type:
-- For any project, `python3` and the CLI script must be available
+- For any project, `python3` must be available (Windows: `python`)
 - For KiCad projects, `kicad-cli` must be available on `PATH`
 - For Cadence projects, require `pstxnet.dat`, `pstxprt.dat`, and the OrCAD Capture XML export together
 - For datasheet-dependent questions, require the relevant datasheet PDF or escalate to `ee-datasheet-master`
@@ -71,74 +71,48 @@ Each claim type demands specific evidence — a device's power domain requires c
 
 ---
 
-## CLI Commands
+## MCP Tools
 
-The skill uses three commands only:
+All analysis via MCP tools (no CLI paths). Tools return JSON.
+
+Server: `sch` — invoke as `mcp__sch__<tool>(...)`.
 
 ### `overview` — Project First Look
 
-```bash
-python scripts/schematic-cli.py overview <project>
-```
+**Tool:** `mcp__sch__overview(project="<path>")`
 
-Output:
-- Project page count, component count, net count
-- Page navigation (numbered index for `--page` queries)
-- Core component candidates (ranked by structural connectivity)
+Output: page count, component count, net count, page index table, core candidates.
 
 Use when: Architecture analysis, design review, or need page context.
 
-### `query` — Inspect Objects
+### `comp` — Inspect a Component
 
-All `query` commands output JSON. Key fields for filtering:
+**Tool:** `mcp__sch__comp(project="<path>", ref="<ref>")`
 
-| Query Type | Top-level Keys | Sub-object Keys |
-|------------|----------------|-----------------|
-| `--page` | index, name, file, type, components, nets | components[i]: ref, value, mpn; nets[i]: name, pin_count |
-| `--component` | ref, value, mpn, page_index, properties, nets, neighbors | nets[i]: name, pin; neighbors: shared_nets |
-| `--net` | name, hierarchical_labels, global_labels, local_labels, pages, pins | pins[i]: ref, pin |
-| `--property` | key, values | values[i]: mpn, refs |
+Returns: value, MPN, pins with net names, properties, neighbors (shared nets with fanout).
 
-```bash
-# Query by page index (from overview)
-python scripts/schematic-cli.py query <project> --page <index>
-# → Filter large output:
-#   | python -c "import sys,json; d=json.load(sys.stdin); print([c['ref'] for c in d['components']])"
-#   | python -c "import sys,json; d=json.load(sys.stdin); print([n['name'] for n in d['nets']])"
+Set `full=true` to include unconnected pins (rarely needed).
 
-# Query component by reference
-python scripts/schematic-cli.py query <project> --component <ref>           # filtered (active pins)
-python scripts/schematic-cli.py query <project> --component <ref> --full    # complete (includes unconnected)
-# → Filter large output:
-#   | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('value'), d.get('mpn'))"
-#   | python -c "import sys,json; import json as j; d=j.load(sys.stdin); del d['neighbors']; print(j.dumps(d, indent=2))"
+### `net` — Inspect a Net
 
-# Search components by text
-python scripts/schematic-cli.py query <project> --component --match <text>
+**Tool:** `mcp__sch__net(project="<path>", name="<net_name>")`
 
-# Query net by exact name
-python scripts/schematic-cli.py query <project> --net <name>
+Returns: all connected pins with reference, pin name, and page.
 
-# Search nets by text
-python scripts/schematic-cli.py query <project> --net --match <text>
+### `page` — Inspect a Page
 
-# Query property values
-python scripts/schematic-cli.py query <project> --property <key>
-# → Filter large output:
-#   | python -c "import sys,json; d=json.load(sys.stdin); print([v['mpn'] for v in d['values'] if v['mpn']])"
+**Tool:** `mcp__sch__page(project="<path>", index=<n>)`
 
-# Pattern matching (explicit YAML required)
-python scripts/schematic-cli.py query <project> --pattern <yaml_file>
-```
+Returns: all components and nets on the page (1-based index from overview).
 
-**`--full` switch**: Use only when blocker requires complete pin-net mapping (e.g., "which pins are unconnected"). Default filtered output hides `unconnected-*` pins.
+### Search & Utility Tools
 
-### `cache` — Cache Management
-
-```bash
-python scripts/schematic-cli.py cache <project> --status
-python scripts/schematic-cli.py cache <project> --clear
-```
+| Tool | Purpose |
+|------|---------|
+| `mcp__sch__comp_search(project, text)` | Search components by MPN/value/ref text |
+| `mcp__sch__net_search(project, text)` | Search nets by name (supports regex) |
+| `mcp__sch__prop(project, key)` | Query property values across all components |
+| `mcp__sch__pattern(project, file)` | Run custom YAML pattern query |
 
 ---
 
@@ -184,8 +158,8 @@ When determining interface mode or device configuration:
 ### Don't: Always Run Overview
 
 ```
-❌ Run overview before every targeted query (--component U10)
-❌ Run overview when user asks about a specific net (--net GND)
+❌ Run overview before every targeted query (comp U10)
+❌ Run overview when user asks about a specific net (net GND)
 
 ✓ Run overview only when: architecture mode, review mode, or need page context
 ```
@@ -285,16 +259,7 @@ Solution: Return the competing candidates, state what extra query would disambig
 User: "U10 是什么？"
 ```
 
-```bash
-# Direct query, no overview - extract basic identity
-python scripts/schematic-cli.py query data/E1005/ --component U10 \
-  | python -c "import sys,json; d=json.load(sys.stdin); print(f\"Value: {d['value']}, MPN: {d.get('mpn')}, Page: {d['page_name']}\")"
-
-# If need net summary for context:
-#   | python -c "import sys,json; d=json.load(sys.stdin); print(f\"Nets ({len(d['nets'])}): {[n['name'].split('/')[-1] for n in d['nets'][:5]]}...\")"
-
-# If role unclear, escalate to MCP
-```
+Invoke `mcp__sch__comp(project="<project>", ref="U10")`. Read the value, mpn, and nets from the result. No overview needed.
 
 ### Example 2: Architecture Analysis
 
@@ -302,46 +267,15 @@ python scripts/schematic-cli.py query data/E1005/ --component U10 \
 User: "分析这个项目的整体架构"
 ```
 
-```bash
-# Architecture mode follows SCHEMATIC_STRATEGY.md Rule 1 + Reading Loop:
-# start with project scope, then page decomposition, then core anchors, then cross-page nets.
+Step 1: `mcp__sch__overview(project="<project>")` — get page index + core candidates.
 
-# Step 1: overview establishes page index + core candidates
-python scripts/schematic-cli.py overview data/E1005/
+Step 2: `mcp__sch__page(project="<project>", page_index=<n>)` for each relevant page.
 
-# From overview, identify:
-# - top core candidate(s)
-# - page indices for main logic, power, peripherals, display, etc.
+Step 3: `mcp__sch__comp(project="<project>", ref="<top_candidate>")` — trace cross-page nets.
 
-# Step 2: inspect the populated architecture pages identified by overview
-python scripts/schematic-cli.py query data/E1005/ --page 8 \
-  | python -c "import sys,json; d=json.load(sys.stdin); print(f\"MCU page {d['index']} {d['name']}: components={[c['ref'] + ':' + c['value'] for c in d['components'] if c['ref'].startswith('U')][:8]}, nets={[n['name'].split('/')[-1] for n in d['nets'][:8]]}\")"
+Step 4: `mcp__sch__net(project="<project>", name="<cross_page_net>")` — find all participants.
 
-python scripts/schematic-cli.py query data/E1005/ --page 6 \
-  | python -c "import sys,json; d=json.load(sys.stdin); print(f\"Power page {d['index']} {d['name']}: components={[c['ref'] + ':' + c['value'] for c in d['components'] if c['ref'].startswith('U')][:8]}, nets={[n['name'].split('/')[-1] for n in d['nets'][:8]]}\")"
-
-python scripts/schematic-cli.py query data/E1005/ --page 10 \
-  | python -c "import sys,json; d=json.load(sys.stdin); print(f\"I/O page {d['index']} {d['name']}: components={[c['ref'] + ':' + c['value'] for c in d['components'] if c['ref'].startswith(('U','J','USB'))][:8]}, nets={[n['name'].split('/')[-1] for n in d['nets'][:8]]}\")"
-
-# Step 3: inspect the top core component from overview, but read it as an index into the design
-python scripts/schematic-cli.py query data/E1005/ --component U10 \
-  | python -c "import sys,json; d=json.load(sys.stdin); neighbors = sorted(d['neighbors']['shared_nets'], key=lambda x: x['fanout'], reverse=True)[:8]; print(f\"Core {d['ref']} {d['value']} on {d['page_name']}: top_shared_nets={[(n['net'].split('/')[-1], n['fanout']) for n in neighbors]}\")"
-
-# Step 4: expand around one verified cross-page net from the core to identify subsystem participants
-python scripts/schematic-cli.py query data/E1005/ --net /SCH_TOP/USB_DP \
-  | python -c "import sys,json; d=json.load(sys.stdin); refs=sorted(set(p['ref'] for p in d['pins'])); print(f\"Net {d['name'].split('/')[-1]}: pages={d['pages']}, refs={refs}\")"
-
-# Step 5: only after the structure is grounded, inspect secondary anchors such as power or peripherals
-python scripts/schematic-cli.py query data/E1005/ --component U1 \
-  | python -c "import sys,json; d=json.load(sys.stdin); nets=[n['name'].split('/')[-1] for n in d['nets'] if any(k in n['name'].upper() for k in ['VIN','VBUS','VSYS','3V3','BAT'])]; print(f\"Power anchor {d['ref']} {d['value']}: nets={nets}\")"
-
-# At this point, do not rush to summarize the whole project.
-# These commands should tell you whether the design skeleton is clear: who is the main controller,
-# where power comes in and is converted, and how one major external interface reaches the core.
-# If that skeleton is still incomplete, look at the missing subsystem next rather than jumping around.
-# A good architecture answer should read like connected blocks: controller, power, I/O, peripherals, display/storage.
-# If one of those blocks is still vague, keep expanding from the nearest confirmed page, net, or anchor component.
-```
+Step 5: Repeat for secondary anchors (power, I/O). Build the picture incrementally.
 
 ### Example 3: Bus Detection
 
@@ -349,44 +283,11 @@ python scripts/schematic-cli.py query data/E1005/ --component U1 \
 User: "I2C 总线上挂了哪些设备？"
 ```
 
-```bash
-# Pattern mode workflow (see SCHEMATIC_STRATEGY.md Rule 1):
-# Step 1: Discover actual I2C signal names in this project (--match supports regex)
-python scripts/schematic-cli.py query data/E1005/ --net --match "SDA|SCL|I2C"
-# Output shows hierarchical_labels: MISC_I2C_SCL, BFG_I2C_SDA, etc.
-# Each match includes: name, kind (net/hierarchical_label/local_label), pages, pin_count
+Step 1: `mcp__sch__net_search(project="<project>", text="SDA|SCL|I2C")` — discover I2C signal names.
 
-# Step 2: If I2C uses GPIO naming, search with $ anchor for exact match:
-python scripts/schematic-cli.py query data/E1005/ --net --match "GPIO0$|GPIO1$"
-# Use $ to avoid matching GPIO10, GPIO11, etc.
-# Output reveals: GPIO0/GPIO1 are used for main I2C in this design
+Step 2: If I2C uses GPIO naming, search with `$` anchor: `text="GPIO0$|GPIO1$"` (avoids matching GPIO10).
 
-# Step 3: Trace the net to get ALL participants on the bus
-python scripts/schematic-cli.py query data/E1005/ --net "/SCH_TOP/ESP32-S3R8/GPIO0" \
-  | python -c "import sys,json; d=json.load(sys.stdin); refs = sorted(set(p['ref'] for p in d['pins'])); print(f\"I2C participants: {refs}\")"
-# Output: I2C participants: ['R58', 'U10', 'U14', 'U15', 'U16', 'U5', 'U6']
-# This answers the user's question directly!
-
-# Step 4: (Optional) Write a custom pattern YAML for validation
-# Create /tmp/i2c_custom.yaml:
-#   name: "I2C"
-#   category: bus
-#   description: "I2C bus"
-#   signals:
-#     - role: scl
-#       patterns: ["(?i)GPIO0$"]
-#       required: true
-#       group_key: true
-#     - role: sda
-#       patterns: ["(?i)GPIO1$"]
-#       required: true
-#       group_key: true
-#   controller:
-#     detect_by: core_component
-
-# Step 5: (Optional) Run pattern query with custom YAML
-python scripts/schematic-cli.py query data/E1005/ --pattern /tmp/i2c_custom.yaml
-```
+Step 3: `mcp__sch__net(project="<project>", name="<exact_net>")` — get ALL pins = bus participants.
 
 ### Example 4: Design Review
 
@@ -394,19 +295,10 @@ python scripts/schematic-cli.py query data/E1005/ --pattern /tmp/i2c_custom.yaml
 User: "电源设计有问题吗？"
 ```
 
-```bash
-# Review mode: overview to find power page
-python scripts/schematic-cli.py overview data/E1005/
+Step 1: `mcp__sch__overview(project="<project>")` — find power pages.
 
-# Query power page - extract power ICs only (U-prefix components)
-python scripts/schematic-cli.py query data/E1005/ --page 6 \
-  | python -c "import sys,json; d=json.load(sys.stdin); ics = [c for c in d['components'] if c['ref'].startswith('U')]; print(f\"Power ICs: {[(c['ref'], c['value'], c.get('mpn','')) for c in ics]}\")"
+Step 2: `mcp__sch__page(project="<project>", page_index=<power_page>)` — list power ICs.
 
-# Or extract power-related nets (VDD, VSYS, GND, etc.)
-python scripts/schematic-cli.py query data/E1005/ --page 6 \
-  | python -c "import sys,json; d=json.load(sys.stdin); power = [n for n in d['nets'] if any(k in n['name'].upper() for k in ['VDD','VSYS','VBAT','VIN','GND','3V3','5V'])]; print(f\"Power nets: {[(n['name'].split('/')[-1], n['pin_count']) for n in power[:10]]}\")"
+Step 3: `mcp__sch__comp(project="<project>", ref="<power_ic>")` — check pin connections.
 
-# Identify power ICs, escalate to MCP for specs
-# Check against schematic: capacitors present? enable pins correct?
-# Report findings with evidence
-```
+Step 4: Escalate to `pcbparts` MCP for part specs, or `ee-datasheet-master` for pin functions. Report findings with evidence.

@@ -24,46 +24,55 @@ Structure first, semantics when blocked.
 
 ## Quick Start
 
-```bash
-# Get project overview
-python scripts/schematic-cli.py overview <project>
+Configure the MCP server in `.claude/mcp.json`:
 
-# Query a component
-python scripts/schematic-cli.py query <project> --component U10
+```json
+{
+  "mcpServers": {
+    "sch": {
+      "command": "python3",
+      "args": ["<path>/schematic_mcp.py"]
+    }
+  }
+}
+```
 
-# Query a net
-python scripts/schematic-cli.py query <project> --net /SCH_TOP/GPIO5
+Then invoke tools directly (no CLI paths):
 
-# Query a page by index
-python scripts/schematic-cli.py query <project> --page 3
+```
+mcp__sch__overview(project="<project>")
+mcp__sch__comp(project="<project>", ref="U10")
+mcp__sch__net(project="<project>", name="VCC_LED")
+mcp__sch__page(project="<project>", index=3)
 ```
 
 ## Entry Modes
 
 | Mode | Trigger | First Action |
 |------|---------|--------------|
-| Architecture | "整体架构", "power tree", "subsystems" | `overview` |
-| Targeted | "U10是什么", "I2C_SDA在哪" | Direct `query` |
-| Pattern | "I2C设备有哪些", "USB拓扑" | `query --pattern <yaml>` |
-| Review | "设计有问题吗", "review" | `overview` |
+| Architecture | "整体架构", "power tree", "subsystems" | `mcp__sch__overview` |
+| Targeted | "U10是什么", "I2C_SDA在哪" | `mcp__sch__comp` or `mcp__sch__net` |
+| Pattern | "I2C设备有哪些", "USB拓扑" | `mcp__sch__pattern` |
+| Review | "设计有问题吗", "review" | `mcp__sch__overview` |
 
 ## Output Structure
 
-| Query Type | Top-level Keys | Sub-object Keys |
-|------------|----------------|-----------------|
-| `--page` | index, name, file, type, components, nets | components[i]: ref, value, mpn; nets[i]: name, pin_count |
-| `--component` | ref, value, mpn, page_index, properties, nets, neighbors | nets[i]: name, pin; neighbors: shared_nets |
-| `--net` | name, hierarchical_labels, global_labels, local_labels, pages, pins | pins[i]: ref, pin |
-| `--property` | key, values | values[i]: mpn, refs |
+| Tool | Top-level Keys | Sub-object Keys |
+|------|----------------|-----------------|
+| `page` | index, name, file, type, components, nets | components[i]: ref, value, mpn; nets[i]: name, pin_count |
+| `comp` | ref, value, mpn, page_index, properties, nets, neighbors | nets[i]: name, pin; neighbors: shared_nets |
+| `net` | name, hierarchical_labels, global_labels, local_labels, pages, pins | pins[i]: ref, pin |
+| `prop` | key, values | values[i]: mpn, refs |
 
 ## File Structure
 
 ```
 schematic-analyzer/
-├── SKILL.md              # Skill definition (trigger, rules, CLI commands)
+├── SKILL.md              # Skill definition (trigger, rules, MCP tools)
 ├── SCHEMATIC_STRATEGY.md # Reading strategy (workflows, principles)
-├── scripts/              # CLI tools
-│   ├── schematic-cli.py  # Main CLI entry point
+├── scripts/              # Analysis engine + MCP server
+│   ├── schematic-cli.py  # CLI entry point (legacy)
+│   ├── schematic_mcp.py  # MCP server (FastMCP)
 │   ├── tools/
 │   │   ├── kicad/        # KiCad format parsers
 │   │   ├── cadence/      # Cadence OrCAD/Allegro parsers (XML + DAT netlist)
@@ -150,34 +159,22 @@ All other dependencies use Python standard library modules (`re`, `pathlib`, `da
 
 ## Platform Support
 
-### Linux
+All platforms: configure the MCP server in `.claude/mcp.json`, then use MCP tools directly. No CLI paths needed.
 
-```bash
-python scripts/schematic-cli.py overview /path/to/project/
+```json
+{
+  "mcpServers": {
+    "sch": {
+      "command": "python3",
+      "args": ["/path/to/schematic_mcp.py"]
+    }
+  }
+}
 ```
 
-### Windows
-
-```powershell
-python scripts\schematic-cli.py overview C:\path\to\project\
-```
-
-**Windows Setup:**
-
-1. Install KiCad (includes `kicad-cli.exe`)
-2. Add KiCad to system PATH, e.g.:
-   - `C:\Program Files\KiCad\10.0\bin`
-3. Verify installation:
-   ```powershell
-   kicad-cli --version
-   python --version
-   ```
-
-**Notes:**
-- All scripts use `pathlib.Path` for cross-platform path handling
-- Python handles path separators automatically (`/` vs `\`)
+**Windows:** Use `python` instead of `python3`, and Windows-style paths for the `args` value.
 
 ## Documentation
 
-- [SKILL.md](./SKILL.md) - Skill definition, CLI commands, anti-patterns
+- [SKILL.md](./SKILL.md) - Skill definition, MCP tools, anti-patterns
 - [SCHEMATIC_STRATEGY.md](./SCHEMATIC_STRATEGY.md) - Reading loop, verification, circuit reasoning

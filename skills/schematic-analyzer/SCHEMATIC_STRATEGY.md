@@ -2,7 +2,7 @@
 
 ## Mission
 
-This document defines how an LLM should read KiCad schematics and Cadence OrCAD/Allegro schematics using the schematic-analyzer CLI tools.
+This document defines how an LLM should read KiCad schematics and Cadence OrCAD/Allegro schematics using the schematic-analyzer MCP tools.
 
 **Goal**: Produce accurate answers to user questions—query what's needed for reliable conclusions, never dump raw files, never guess without grounding.
 
@@ -10,11 +10,11 @@ This document defines how an LLM should read KiCad schematics and Cadence OrCAD/
 
 ## Quick Reference
 
-For CLI commands and core principles, see [SKILL.md](./SKILL.md).
+For MCP tools and core principles, see [SKILL.md](./SKILL.md).
 
-**Output format**: All `query` commands output JSON. `overview` outputs text.
+**Output format**: All `query` commands output JSON. `mcp__sch__overview` outputs text.
 
-**Pattern query**: `--pattern` requires explicit YAML file. See Rule 1 for fallback strategy when pattern doesn't match.
+**Pattern query**: `pattern` requires explicit YAML file. See Rule 1 for fallback strategy when pattern doesn't match.
 
 ---
 
@@ -31,7 +31,7 @@ The LLM should behave like a disciplined engineer:
 
 ## Circuit Reasoning Principles
 
-The CLI outputs raw structural data (pin-net tables, connectivity, neighbors). These principles teach how to interpret that data — turning structure into meaning.
+The tools output raw structural data (pin-net tables, connectivity, neighbors). These principles teach how to interpret that data — turning structure into meaning.
 
 ### Pin-Net Table Interpretation
 
@@ -71,14 +71,14 @@ The CLI outputs raw structural data (pin-net tables, connectivity, neighbors). T
 
 ### Rule 1: Choose Entry Mode First
 
-Before any CLI call, decide which mode fits the question:
+Before any tool call, decide which mode fits the question:
 
 | Mode | Trigger | First Action |
 |------|---------|--------------|
-| Architecture | "分析整体架构" "power tree" "subsystems" | `overview` |
+| Architecture | "分析整体架构" "power tree" "subsystems" | `mcp__sch__overview` |
 | Targeted | "U10是什么" "I2C_SDA在哪" 明确目标 | Direct `query` |
-| Pattern | "I2C设备有哪些" "USB拓扑" | `query --pattern <yaml_file>` |
-| Review | "设计有问题吗" "review" | `overview` |
+| Pattern | "I2C设备有哪些" "USB拓扑" | `pattern(file=<yaml_file>)` |
+| Review | "设计有问题吗" "review" | `mcp__sch__overview` |
 
 **Key principle**: For targeted queries with clear targets, skip overview and query directly.
 
@@ -87,10 +87,8 @@ Before any CLI call, decide which mode fits the question:
 **Pattern failure fallback**: If no matching YAML exists or pattern returns no results, do NOT skip the analysis:
 
 1. Use broad text search to find candidate signals:
-   ```bash
-   schematic-cli.py query <project> --net --match "SCK\|CLK\|MOSI\|MISO\|CS"
-   schematic-cli.py query <project> --net --match "SDA\|SCL"
-   ```
+   `mcp__sch__net_search(project, text="SCK|CLK|MOSI|MISO|CS")`
+   `mcp__sch__net_search(project, text="SDA|SCL")`
 2. Group discovered nets by prefix (e.g., `SD_*`, `EP_*` indicate separate buses)
 3. Verify each candidate bus by tracing connections
 4. Do NOT conclude "no buses found" just because pattern failed
@@ -100,13 +98,13 @@ Before any CLI call, decide which mode fits the question:
 The files in `.claude/skills/schematic-analyzer/patterns/` (i2c.yaml, spi.yaml, etc.) are **schema examples only** — they show the YAML structure and generic net-name regexes. They may not match the actual net naming conventions in the project under analysis.
 
 The correct workflow for pattern mode:
-1. First use structural queries (`query --net --match`, `query --component`) to discover the actual net names used for the bus in this project
+1. First use structural queries (`net_search`, `comp`) to discover the actual net names used for the bus in this project
 2. Write a custom YAML pattern using the specific net names discovered (or regexes derived from them)
-3. Run `query --pattern <custom.yaml>` to validate the bus topology across all participants
+3. Run `pattern(file=<custom.yaml>)` to validate the bus topology across all participants
 
 Example: if structural queries reveal nets named `FG_I2C_SDA` and `FG_I2C_SCL`, write a YAML with patterns targeting those specific names, not the generic `(?i)I2C.*SDA` from the example file.
 
-The example YAMLs in `patterns/` are reference material for understanding the schema — not files to blindly pass to `--pattern`.
+The example YAMLs in `patterns/` are reference material for understanding the schema — not files to blindly pass to `pattern`.
 
 **Pattern YAML Schema**:
 
@@ -157,15 +155,15 @@ extra_fields:                  # Additional metadata fields (optional)
 
 ### Rule 2: Page Queries Require Overview
 
-`query --page` uses numeric indices from `overview` output. If you need page-level analysis, run overview first.
+`page` uses numeric indices from `mcp__sch__overview` output. If you need page-level analysis, run overview first.
 
 ### Rule 3: References Are Globally Unique
 
-The CLI assumes **ERC-clean hierarchy**: each reference (U17, R5, C10) is unique across the entire project.
+The parser assumes **ERC-clean hierarchy**: each reference (U17, R5, C10) is unique across the entire project.
 
-If a reference is not found: the component does not exist — check spelling or use `--match` to search.
+If a reference is not found: the component does not exist — check spelling or use `comp_search` to search.
 
-**Net names** may be hierarchical (e.g., `/SCH_TOP/I2C_SDA`). Use exact name or `--match`. `query --net <name>` returns the root net name plus any connected `hierarchical_labels`, `global_labels`, and `local_labels` visible through the page hierarchy, including parent-sheet `sheet pin` aliases that rename a signal between pages.
+**Net names** may be hierarchical (e.g., `/SCH_TOP/I2C_SDA`). Use exact name or `comp_search`. `net(name=<name>)` returns the root net name plus any connected `hierarchical_labels`, `global_labels`, and `local_labels` visible through the page hierarchy, including parent-sheet `sheet pin` aliases that rename a signal between pages.
 
 ### Rule 4: Structure Before Semantics
 
@@ -188,7 +186,7 @@ Only expand evidence to resolve that blocker.
 
 ### Rule 6: Re-Ground All Inferred Conclusions
 
-Any conclusion not directly read from CLI output is an inference and must be verified against schematic evidence. This applies to:
+Any conclusion not directly read from MCP tool output is an inference and must be verified against schematic evidence. This applies to:
 
 - **MCP/datasheet results**: Explain what a part *can* do, not what it *is doing* in this design
 - **Device model inference**: A part's type/category does not determine its power domain, interface mode, or configuration
@@ -230,21 +228,16 @@ Apply this loop adaptively based on entry mode.
 
 ### Step 1: Execute Minimum Path
 
-**For Architecture/Review Mode**:
-```bash
-schematic-cli.py overview <project>
-```
+**For Architecture/Review Mode**: `mcp__sch__overview(project)`
 Output establishes: project scope, page index, core candidates.
 
-**For Targeted/Pattern Mode**:
-```bash
-# Skip overview, query directly
-schematic-cli.py query <project> --component <ref>
+**For Targeted/Pattern Mode**: skip overview, query directly
+mcp__sch__comp(project, ref)
 # → Filter large output:
 #   | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('value'), d.get('mpn'))"
 #   | python -c "import sys,json; import json as j; d=j.load(sys.stdin); del d['neighbors']; print(j.dumps(d, indent=2))"
 
-schematic-cli.py query <project> --pattern /path/to/pattern.yaml  # explicit file required
+mcp__sch__pattern(project, file="/path/to/pattern.yaml")  # explicit file required
 ```
 
 ### Step 2: Form or Refine Hypothesis
@@ -260,29 +253,29 @@ Use appropriate query type:
 
 | Question | Command |
 |----------|---------|
-| What's on this page? | `query --page <index>` |
-| What does this component do? | `query --component <ref>` (filtered) |
-| Which pins are unconnected/floating? | `query --component <ref> --full` |
-| Where does this net go? | `query --net <name>` |
-| Find components with text | `query --component --match <text>` |
-| Find nets with text | `query --net --match <text>` |
-| What MPN values exist? | `query --property MPN` |
-| Detect buses/subsystems | `query --pattern <yaml_file>` (explicit file required) |
+| What's on this page? | `page(index=<index>)` |
+| What does this component do? | `comp(ref=<ref>)` (filtered) |
+| Which pins are unconnected/floating? | `comp(ref=<ref>, full=true)` |
+| Where does this net go? | `net(name=<name>)` |
+| Find components with text | `comp_search(text=<text>)` |
+| Find nets with text | `net_search(text=<text>)` |
+| What MPN values exist? | `prop(key="MPN")` |
+| Detect buses/subsystems | `pattern(file=<yaml_file>)` (explicit file required) |
 
 ### Step 3A: Handle Large Core Components Differently
 
-If `overview` shows a component with very high `connected_net_count` or `neighboring_symbol_count`, do **not** assume one `query --component` result should be fully consumed inline.
+If `mcp__sch__overview` shows a component with very high `connected_net_count` or `neighboring_symbol_count`, do **not** assume one `comp` result should be fully consumed inline.
 
 **Choose the right output mode first**:
 
 | Mode | Command | Output Content | Use Case |
 |------|---------|----------------|----------|
-| Filtered (default) | `--component <ref>` | Active pins only, hides `unconnected-*` | First inspection, role ID, connectivity questions |
-| Full | `--component <ref> --full` | All pins including unconnected | Pin audit, N/C check, datasheet cross-reference |
+| Filtered (default) | `comp <ref>` | Active pins only, hides `unconnected-*` | First inspection, role ID, connectivity questions |
+| Full | `comp(ref=<ref>, full=true)` | All pins including unconnected | Pin audit, N/C check, datasheet cross-reference |
 
-**Decision rule**: Start with filtered view. Only use `--full` when the blocker explicitly requires unconnected pin visibility (N/C audit, pin count verification, floating pin check).
+**Decision rule**: Start with filtered view. Only use `full=true` when the blocker explicitly requires unconnected pin visibility (N/C audit, pin count verification, floating pin check).
 
-**For large components**: run filtered once to establish role and key connections. If payload is too large to consume inline, switch to indexed retrieval: scan once to identify key signals and neighbor refs, then follow up with targeted `query --net` / `query --component` queries. Do not re-read the full dump.
+**For large components**: run filtered once to establish role and key connections. If payload is too large to consume inline, switch to indexed retrieval: scan once to identify key signals and neighbor refs, then follow up with targeted `net` / `comp` queries. Do not re-read the full dump.
 
 Key principle: Filtered output = reading mode; Full output = audit mode.
 
@@ -292,29 +285,29 @@ Ask: What prevents a reliable answer?
 
 | Blocker | Action Chain |
 |---------|--------------|
-| Component role unclear | `query --component <ref>` → check value/MPN → MCP lookup if needed |
-| Net source unclear | `query --net <name>` → inspect `connected_refs` in output → `query --component` on each |
-| Bus ownership unclear | `query --pattern <yaml_file>` → check controller/participant roles |
+| Component role unclear | `comp(ref=<ref>)` → check value/MPN → MCP lookup if needed |
+| Net source unclear | `net(name=<name>)` → inspect `connected_refs` in output → `comp` on each |
+| Bus ownership unclear | `pattern(file=<yaml_file>)` → check controller/participant roles |
 | Design intent unclear | MCP spec lookup → datasheet → re-ground to schematic pins |
 
-**Action chain format**: Each blocker maps to a concrete CLI sequence. No abstract verbs like "trace" or "check" without specifying how.
+**Action chain format**: Each blocker maps to a concrete MCP tool sequence. No abstract verbs like "trace" or "check" without specifying how.
 
 ### Step 5: Expand Locally
 
 From current query result, extract expansion targets:
 
-**From `--component` output**:
-- Find interesting net names → `query --net <name>` for signal tracing
-- Find neighbor component refs in neighbors section → `query --component <ref>` to continue investigation
-- Note the page_index → `query --page <index>` for page context
+**From `comp` output**:
+- Find interesting net names → `net(name=<name>)` for signal tracing
+- Find neighbor component refs in neighbors section → `comp(ref=<ref>)` to continue investigation
+- Note the page_index → `page(index=<index>)` for page context
 
-**From `--net` output**:
-- Find component refs connected to this net → `query --component <ref>` on each participant
+**From `net` output**:
+- Find component refs connected to this net → `comp(ref=<ref>)` on each participant
 - Check pages list to identify cross-page signals
 
-**From `--page` output**:
-- Find components of interest → `query --component <ref>` for details
-- Find interesting net names → `query --net <name>` for signal tracing
+**From `page` output**:
+- Find components of interest → `comp(ref=<ref>)` for details
+- Find interesting net names → `net(name=<name>)` for signal tracing
 
 Do NOT jump to full-project analysis unless local path fails.
 
@@ -384,7 +377,7 @@ When verification passes, synthesize:
 
 ### What to Keep in Context
 
-- `overview` output (compact, ~50 lines)
+- `mcp__sch__overview` output (compact, ~50 lines)
 - Query results for current investigation path
 - Hypothesis and blocker status
 - Key component/nets for current answer
@@ -404,23 +397,23 @@ For large core components (SoM, MCU, FPGA with dozens/hundreds of nets), large o
 1. Scan once to identify key elements: main power rails, interface buses, control signals
 2. Note relevant net names and neighbor refs for follow-up queries
 3. Issue targeted queries instead of re-reading the full dump:
-   - `query --net <name>` for specific signals
-   - `query --component <neighbor_ref>` for adjacent components
-   - `query --page <index>` for page context
+   - `net(name=<name>)` for specific signals
+   - `comp(ref=<neighbor_ref>)` for adjacent components
+   - `page(index=<index>)` for page context
 
-This is a reasoning strategy within the current session. It has no relation to the CLI `cache` subcommand.
+This is a reasoning strategy within the current session.
 
-### Project Cache (CLI Maintenance Only)
+### Project Cache (Automatic)
 
 ```bash
 # Check cache status
-schematic-cli.py cache data/project/ --status
+(removed — cache is automatic)
 
 # Clear if schematic changed
-schematic-cli.py cache data/project/ --clear
+(removed — cache is automatic)
 ```
 
-CLI cache is project-level, automatic for repeated queries. Manual clear only when schematic file changed. It does NOT provide object-level result storage for LLM reasoning.
+Cache is project-level, automatic for repeated queries. Manual clear only when schematic file changed. It does NOT provide object-level result storage for LLM reasoning.
 
 ---
 
@@ -475,5 +468,5 @@ Then reason again.
 | Verify before output | Audit each claim against its required evidence type (Step 6.5) |
 | Trace both endpoints | Don't conclude from one side of a connection — check both ends |
 | Escalate conditionally | MCP/datasheet only when structure is insufficient |
-| Ground all inferences | Every non-CLI-derived conclusion must tie back to pin/net evidence |
+| Ground all inferences | Every non-tool-derived conclusion must tie back to pin/net evidence |
 | Accept uncertainty | "Unknown" is valid; guessing is not |
