@@ -58,6 +58,7 @@ class IndexStatistics:
     total_components: int
     total_sheets: int
     duplicate_reference_count: int
+    dnp_filtered: int = 0
 
 
 @dataclass
@@ -115,13 +116,12 @@ class ProjectIndexer:
         components: dict[str, ComponentInstance] = {}
         hierarchy: list[SheetInfo] = []
         sheet_name_to_path: dict[str, str] = {}
+        dnp_filtered = 0
 
         for record in self._build_sheet_records(scope):
             parser = get_schematic_parser(str(record.file_path), include_child_sheets=False)
-            try:
-                local_components = parser.get_components(include_dnp=False)
-            except TypeError:
-                local_components = parser.get_components()
+            local_components = parser.get_components()
+            dnp_filtered += parser.get_dnp_count()
             hierarchy.append(
                 SheetInfo(
                     sheet_name=record.sheet_name,
@@ -180,6 +180,7 @@ class ProjectIndexer:
                 total_components=len(components),
                 total_sheets=len(hierarchy),
                 duplicate_reference_count=0,  # TODO: compute from actual instance resolution
+                dnp_filtered=dnp_filtered,
             ),
         )
 

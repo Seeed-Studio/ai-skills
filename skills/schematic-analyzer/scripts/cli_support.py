@@ -38,6 +38,9 @@ def print_overview_summary(payload: dict) -> None:
     print("Project Overview")
     print(f"Project Pages: {project['project_page_count']}")
     print(f"Project Components: {project['project_component_count']}")
+    dnp = project.get("project_dnp_count")
+    if dnp:
+        print(f"Project DNP (filtered): {dnp}")
     print(f"Project Nets: {project['project_net_count']}")
     print(f"Root Schematic: {project['root_schematic_filename']}")
     print(f"Referenced Pages: {project['referenced_page_count']}")

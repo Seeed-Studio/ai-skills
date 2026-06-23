@@ -522,6 +522,7 @@ class SchematicAnalyzer:
             "project_overview": {
                 "project_page_count": len(page_navigation),
                 "project_component_count": len(self.project_index.components),
+                "project_dnp_count": self.project_index.statistics.dnp_filtered,
                 "project_net_count": len(phase_1["nets"]),
                 "root_schematic_filename": self.scope.root_schematic.name,
                 "referenced_page_count": len(self.scope.referenced_sheets),

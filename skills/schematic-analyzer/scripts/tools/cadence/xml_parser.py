@@ -809,20 +809,8 @@ class CadenceXMLParser:
             "exclude_from_sim": dnp,
         }
 
-    def _filter_dnp(
-        self, components: list[SchematicComponent], include_dnp: bool = False,
-    ) -> list[SchematicComponent]:
-        """Filter DNP components from a list.
-
-        Args:
-            components: Component list to filter.
-            include_dnp: If True, return all components including DNP.
-
-        Returns:
-            Filtered component list.
-        """
-        if include_dnp:
-            return list(components)
+    def _filter_dnp(self, components: list[SchematicComponent]) -> list[SchematicComponent]:
+        """Return only populated components (DNP excluded)."""
         return [c for c in components if not c.flags.get("dnp", False)]
 
     def _build_components(self) -> None:
@@ -974,14 +962,19 @@ class CadenceXMLParser:
 
     # ---- Public interface (matches KiCad SchematicParser) ----
 
-    def get_components(self, include_dnp: bool = False) -> list[SchematicComponent]:
-        """Get components from the schematic.
+    def get_components(self) -> list[SchematicComponent]:
+        """Return populated components only.
 
-        Args:
-            include_dnp: If True, include DNP (do-not-populate) components.
+        DNP components are filtered out so downstream analysis reflects the
+        populated board. Use get_dnp_count() to report how many were excluded.
         """
         self._ensure_parsed()
-        return self._filter_dnp(self._components, include_dnp)
+        return self._filter_dnp(self._components)
+
+    def get_dnp_count(self) -> int:
+        """Return the number of DNP components excluded by get_components()."""
+        self._ensure_parsed()
+        return sum(1 for c in self._components if c.flags.get("dnp", False))
 
     def get_nets(self) -> list[SchematicNet]:
         """Get all nets from the schematic."""
@@ -1030,13 +1023,8 @@ class CadenceXMLParser:
                 return comp
         return None
 
-    def search_components(self, pattern: str, include_dnp: bool = False) -> list[SchematicComponent]:
-        """Search components by text pattern (matches reference, value, properties).
-
-        Args:
-            pattern: Search pattern (case-insensitive).
-            include_dnp: If True, include DNP components in results.
-        """
+    def search_components(self, pattern: str) -> list[SchematicComponent]:
+        """Search populated components by text pattern (matches reference, value, properties)."""
         self._ensure_parsed()
         pattern_lower = pattern.lower()
         results = []
@@ -1045,7 +1033,7 @@ class CadenceXMLParser:
                     pattern_lower in comp.value.lower() or
                     any(pattern_lower in v.lower() for v in comp.properties.values())):
                 results.append(comp)
-        return self._filter_dnp(results, include_dnp)
+        return self._filter_dnp(results)
 
     def get_component_connections(self, reference: str) -> dict[str, Any]:
         """Get pin-to-net connections for a component."""
@@ -1120,17 +1108,12 @@ class CadenceXMLParser:
         self._ensure_parsed()
         return [p["name"] for p in self._pages]
 
-    def get_components_on_page(self, page_index: int, include_dnp: bool = False) -> list[SchematicComponent]:
-        """Get components on a specific page.
-
-        Args:
-            page_index: Zero-based page index.
-            include_dnp: If True, include DNP components.
-        """
+    def get_components_on_page(self, page_index: int) -> list[SchematicComponent]:
+        """Get populated components on a specific page."""
         self._ensure_parsed()
         page_refs = set()
         for part in self._parts:
             if part.page_index == page_index:
                 page_refs.add(part.reference.upper())
         page_components = [c for c in self._components if c.reference.upper() in page_refs]
-        return self._filter_dnp(page_components, include_dnp)
+        return self._filter_dnp(page_components)
