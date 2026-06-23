@@ -118,10 +118,9 @@ class ProjectIndexer:
 
         for record in self._build_sheet_records(scope):
             parser = get_schematic_parser(str(record.file_path), include_child_sheets=False)
-            try:
-                local_components = parser.get_components(include_dnp=False)
-            except TypeError:
-                local_components = parser.get_components()
+            # Keep DNP components in the index (flagged) — filtering happens at
+            # the query layer so include_dnp queries can still surface them.
+            local_components = parser.get_components(include_dnp=True)
             hierarchy.append(
                 SheetInfo(
                     sheet_name=record.sheet_name,

@@ -35,15 +35,16 @@ def cmd_query(args):
 
     analyzer = build_analyzer(schematic_path, args)
     try:
+        include_dnp = getattr(args, "include_dnp", False)
         if args.page is not None:
-            payload = analyzer.query_page(args.page)
+            payload = analyzer.query_page(args.page, include_dnp=include_dnp)
         elif args.component is not None:
             if args.match:
-                payload = analyzer.query_component_match(args.match, include_all=args.all)
+                payload = analyzer.query_component_match(args.match, include_all=args.all, include_dnp=include_dnp)
             elif not args.component:
                 raise ValueError("--component requires a reference unless used with --match")
             else:
-                payload = analyzer.query_component(args.component, include_full=args.full)
+                payload = analyzer.query_component(args.component, include_full=args.full, include_dnp=include_dnp)
         elif args.net is not None:
             if args.match:
                 payload = analyzer.query_net_match(args.match, include_all=args.all)

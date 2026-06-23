@@ -746,14 +746,22 @@ class SchematicParser:
 
         return deduped
 
-    def get_components(self) -> list[SchematicComponent]:
+    def get_components(self, include_dnp: bool = False) -> list[SchematicComponent]:
         """Get all components from schematic.
+
+        Args:
+            include_dnp: If True, include DNP (do-not-populate) components.
+                Default False — DNP components are filtered out to match
+                the populated board, not the schematic drawing.
 
         Returns:
             List of components
         """
         data = self._parse_file()
-        return [SchematicComponent.from_kicad_skip(c) for c in data["components"]]
+        components = [SchematicComponent.from_kicad_skip(c) for c in data["components"]]
+        if include_dnp:
+            return components
+        return [c for c in components if not c.flags.get("dnp", False)]
 
     def get_nets(self) -> list[SchematicNet]:
         """Get all nets from schematic.

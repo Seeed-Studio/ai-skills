@@ -32,6 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     query_parser.add_argument("--match", help="Search text for component or net query mode")
     query_parser.add_argument("--all", action="store_true", help="Reserved full-result mode")
     query_parser.add_argument("--full", action="store_true", help="Return full component pin-net details")
+    query_parser.add_argument("--include-dnp", action="store_true",
+                              help="Include DNP (do-not-populate) components. Default: filtered out.")
     query_parser.add_argument("--output", "-o", help="Write JSON result to file")
     query_parser.set_defaults(func=cmd_query)
 

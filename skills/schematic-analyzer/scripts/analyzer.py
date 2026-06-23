@@ -518,10 +518,14 @@ class SchematicAnalyzer:
         for candidate_index, candidate in enumerate(core_component_candidates, start=1):
             candidate["candidate_index"] = candidate_index
 
+        all_components = list(self.project_index.components.values())
+        dnp_count = sum(1 for c in all_components if c.flags.get("dnp", False))
+
         return {
             "project_overview": {
                 "project_page_count": len(page_navigation),
-                "project_component_count": len(self.project_index.components),
+                "project_component_count": len(all_components) - dnp_count,
+                "project_dnp_count": dnp_count,
                 "project_net_count": len(phase_1["nets"]),
                 "root_schematic_filename": self.scope.root_schematic.name,
                 "referenced_page_count": len(self.scope.referenced_sheets),
@@ -530,7 +534,7 @@ class SchematicAnalyzer:
             "core_component_candidates": core_component_candidates,
         }
 
-    def query_page(self, page_index: int) -> dict[str, Any]:
+    def query_page(self, page_index: int, *, include_dnp: bool = False) -> dict[str, Any]:
         """Return one page inspection payload."""
         if page_index < 1 or page_index > len(self.project_index.hierarchy):
             raise LookupError(f"Unknown page index: {page_index}")
@@ -541,6 +545,7 @@ class SchematicAnalyzer:
             self._component_summary(component)
             for component in self.project_index.components.values()
             if component.sheet_path == sheet.sheet_path
+            and (include_dnp or not component.flags.get("dnp", False))
         ]
         nets = self._page_nets(sheet.sheet_path, phase_1["component_nets"])
         return {
@@ -555,13 +560,20 @@ class SchematicAnalyzer:
             "nets": nets,
         }
 
-    def query_component(self, reference: str, *, include_full: bool = False) -> dict[str, Any]:
-        """Return one component inspection payload."""
+    def query_component(self, reference: str, *, include_full: bool = False, include_dnp: bool = False) -> dict[str, Any]:
+        """Return one component inspection payload.
+
+        Args:
+            reference: Component reference designator (e.g. "R1").
+            include_full: Include unconnected nets and full pin detail.
+            include_dnp: Allow lookup of DNP components. Default False —
+                DNP components are treated as not populated and are hidden.
+        """
         phase_1 = self._run_phase_1()
         ref = reference.upper()
         component = self.project_index.components.get(ref)
-        if component is None:
-            suggestion = self._suggest_closest_ref(ref)
+        if component is None or (not include_dnp and component.flags.get("dnp", False)):
+            suggestion = self._suggest_closest_ref(ref, include_dnp=include_dnp)
             msg = f"Component '{ref}' not found"
             if suggestion:
                 msg += f". Did you mean '{suggestion}'?"
@@ -636,9 +648,10 @@ class SchematicAnalyzer:
         }
         return payload
 
-    def query_component_match(self, text: str, *, include_all: bool = False) -> dict[str, Any]:
+    def query_component_match(self, text: str, *, include_all: bool = False, include_dnp: bool = False) -> dict[str, Any]:
         """Search components by text (supports regex)."""
         matches = []
+        dnp_filtered = 0
         # Try regex first, fallback to substring if regex is invalid
         try:
             pattern = re.compile(text, re.IGNORECASE)
@@ -662,16 +675,22 @@ class SchematicAnalyzer:
             else:
                 if wanted not in haystack.lower():
                     continue
+            if component.flags.get("dnp", False):
+                if not include_dnp:
+                    dnp_filtered += 1
+                    continue
             mpn = self._component_mpn(component)
             match_entry = {
                 "ref": component.reference,
                 "value": component.value,
             }
+            if include_dnp:
+                match_entry["dnp"] = bool(component.flags.get("dnp", False))
             if mpn:
                 match_entry["mpn"] = mpn
             matches.append(match_entry)
         shown, truncated = self._truncate_items(matches, include_all=include_all)
-        return {
+        result = {
             "query_type": "component",
             "search": text,
             "matches": shown,
@@ -679,6 +698,9 @@ class SchematicAnalyzer:
             "shown": len(shown),
             "total": len(matches),
         }
+        if dnp_filtered:
+            result["dnp_filtered"] = dnp_filtered
+        return result
 
     def query_net(self, net_name: str) -> dict[str, Any]:
         """Return one exact-net inspection payload."""
@@ -1311,13 +1333,16 @@ class SchematicAnalyzer:
 
         return 1
 
-    def _suggest_closest_ref(self, ref: str) -> str | None:
+    def _suggest_closest_ref(self, ref: str, *, include_dnp: bool = False) -> str | None:
         """Find closest component reference by prefix match."""
         prefix = re.match(r"^[A-Z]+", ref)
         if not prefix:
             return None
         pfx = prefix.group()
-        candidates = [r for r in self.project_index.components if r.startswith(pfx)]
+        candidates = [
+            r for r, comp in self.project_index.components.items()
+            if r.startswith(pfx) and (include_dnp or not comp.flags.get("dnp", False))
+        ]
         if not candidates:
             return None
         # Sort by numeric suffix distance
