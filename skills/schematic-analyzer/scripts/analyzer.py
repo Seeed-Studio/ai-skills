@@ -624,6 +624,7 @@ class SchematicAnalyzer:
             "ref": component.reference,
             "value": component.value,
             "mpn": mpn,
+            "dnp": bool(component.flags.get("dnp", False)),
             "page_index": page_index,
             "page_name": self._sheet_name_from_path(sheet_path),
             "properties": self._dedup_properties(component, mpn),
@@ -666,6 +667,7 @@ class SchematicAnalyzer:
             match_entry = {
                 "ref": component.reference,
                 "value": component.value,
+                "dnp": bool(component.flags.get("dnp", False)),
             }
             if mpn:
                 match_entry["mpn"] = mpn

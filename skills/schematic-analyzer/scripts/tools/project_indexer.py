@@ -119,7 +119,7 @@ class ProjectIndexer:
         for record in self._build_sheet_records(scope):
             parser = get_schematic_parser(str(record.file_path), include_child_sheets=False)
             try:
-                local_components = parser.get_components(include_dnp=False)
+                local_components = parser.get_components(include_dnp=True)
             except TypeError:
                 local_components = parser.get_components()
             hierarchy.append(

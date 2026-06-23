@@ -20,6 +20,7 @@ class NetlistComponent:
     footprint: Optional[str] = None
     pins: dict[str, str] = field(default_factory=dict)  # pin_number -> net_name
     units: list[str] = field(default_factory=list)
+    dnp: bool = False
 
 
 @dataclass
@@ -100,6 +101,13 @@ class NetlistParser:
                 if unit.get("name")
             ]
 
+            # Detect DNP from <property name="dnp"/> under <comp>
+            dnp = any(
+                (prop.get("name") or "").lower() == "dnp"
+                or (prop.findtext("name") or "").lower() == "dnp"
+                for prop in comp.findall("./property")
+            )
+
             # Pins will be populated from nets later
             components[ref] = NetlistComponent(
                 reference=ref,
@@ -109,6 +117,7 @@ class NetlistParser:
                 footprint=footprint,
                 pins={},  # Empty initially, will populate from nets
                 units=units,
+                dnp=dnp,
             )
 
         # Parse nets and populate component pins
