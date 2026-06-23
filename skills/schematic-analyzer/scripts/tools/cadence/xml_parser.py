@@ -1018,7 +1018,7 @@ class CadenceXMLParser:
         """Find component by reference designator."""
         self._ensure_parsed()
         ref_upper = reference.upper()
-        for comp in self._components:
+        for comp in self._filter_dnp(self._components):
             if comp.reference.upper() == ref_upper:
                 return comp
         return None

@@ -216,10 +216,13 @@ class ProjectIndexer:
         ref_to_page: dict[str, str] = {}
         page_refs: dict[str, list[str]] = {}
         for ref, info in part_info.items():
+            ref_key = ref.upper()
+            if ref_key not in components:
+                continue
             page = info.get("page")
             if page:
-                ref_to_page[ref] = page
-                page_refs.setdefault(page, []).append(ref)
+                ref_to_page[ref_key] = page
+                page_refs.setdefault(page, []).append(ref_key)
 
         if not page_refs:
             return None

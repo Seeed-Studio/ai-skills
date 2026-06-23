@@ -70,6 +70,11 @@ class CadenceConnectivityBuilder:
         """
         root_path = Path(root_schematic).resolve()
         pin_net_map, source, parser, netlist_dir = self._get_pin_net_map(root_path)
+        pin_net_map = {
+            ref.upper(): pin_nets
+            for ref, pin_nets in pin_net_map.items()
+            if ref.upper() in project_index.components
+        }
 
         # Try to load page information from pstxprt.dat
         page_info: dict[str, dict] = {}
@@ -77,7 +82,10 @@ class CadenceConnectivityBuilder:
         if source == "pstxnet.dat" and netlist_dir is not None:
             pstxprt_file = netlist_dir / "pstxprt.dat"
             if pstxprt_file.exists():
-                page_info = parse_pstxprt(pstxprt_file)
+                page_info = {
+                    ref.upper(): info
+                    for ref, info in parse_pstxprt(pstxprt_file).items()
+                }
             pstchip_file = netlist_dir / "pstchip.dat"
             if pstchip_file.exists():
                 pin_number_map = parse_pstchip(pstchip_file)

@@ -6,16 +6,37 @@ calculations without requiring large XML test data files.
 
 import sys
 import tempfile
+from types import SimpleNamespace
 from pathlib import Path
 
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+from tools.cadence.connectivity import CadenceConnectivityBuilder
 from tools.cadence.xml_parser import (
+    CadenceXMLParser,
     _transform_pin_coords,
     _get_symbol_connection_point_static,
     is_cadence_xml,
 )
+from tools.kicad.schematic_parser import SchematicComponent
+from tools.project_indexer import ComponentInstance, ProjectIndexer
+
+
+def _component_instance(reference: str) -> ComponentInstance:
+    return ComponentInstance(
+        reference=reference,
+        instance_id=reference,
+        value="10k",
+        lib_id="Device:R",
+        footprint=None,
+        source_schematic=Path("/tmp/design.xml"),
+        sheet_path="/",
+        sheet_type="root",
+        pins=[],
+        properties={},
+        flags={"dnp": False},
+    )
 
 
 class TestTransformPinCoords:
@@ -96,6 +117,88 @@ class TestIsCadenceXml:
     def test_nonexistent_file(self):
         """Missing file should return False."""
         assert is_cadence_xml("/nonexistent/file.xml") is False
+
+
+class TestCadenceDnpFiltering:
+    """DNP filtering stays at the parser/index boundary."""
+
+    def test_component_lookup_hides_dnp_components(self):
+        parser = object.__new__(CadenceXMLParser)
+        parser._components = [
+            SchematicComponent(
+                reference="R1",
+                value="10k",
+                library_id="Device:R",
+                flags={"dnp": False},
+            ),
+            SchematicComponent(
+                reference="R2",
+                value="DNP",
+                library_id="Device:R",
+                flags={"dnp": True},
+            ),
+        ]
+        parser._pin_net_map = {"R1": {"1": "NET_A"}, "R2": {"1": "NET_A"}}
+        parser._ensure_parsed = lambda: None
+
+        assert parser.get_component_by_reference("R1").reference == "R1"
+        assert parser.get_component_by_reference("R2") is None
+        assert parser.get_component_connections("R2") == {"error": "Component R2 not found"}
+
+    def test_connectivity_ignores_refs_filtered_from_project_index(self):
+        builder = CadenceConnectivityBuilder()
+        builder._get_pin_net_map = lambda root: (
+            {"R1": {"1": "NET_A"}, "R2": {"1": "NET_A"}},
+            "xml_coordinate",
+            None,
+            None,
+        )
+        project_index = SimpleNamespace(
+            components={"R1": _component_instance("R1")},
+            resolver=None,
+        )
+
+        graph = builder.build(project_index, Path("/tmp/design.xml"))
+
+        assert set(graph.component_nets) == {"R1"}
+        assert graph.all_nets["NET_A"].connected_refs == ["R1"]
+        assert graph.all_nets["NET_A"].connected_pins == [("R1", "1", "")]
+
+    def test_cadence_page_counts_use_filtered_components(self, tmp_path, monkeypatch):
+        import tools.cadence.netlist_dat_parser as netlist_dat_parser
+        import tools.parser_factory as parser_factory
+
+        (tmp_path / "pstxprt.dat").write_text("", encoding="utf-8")
+        monkeypatch.setattr(netlist_dat_parser, "find_netlist_dir", lambda root: tmp_path)
+        monkeypatch.setattr(
+            netlist_dat_parser,
+            "parse_pstxprt",
+            lambda path: {
+                "R1": {"page": "page1"},
+                "R2": {"page": "page1"},
+                "C1": {"page": "page2"},
+            },
+        )
+        monkeypatch.setattr(
+            parser_factory,
+            "get_schematic_parser",
+            lambda *args, **kwargs: SimpleNamespace(get_page_names=lambda: ["Power", "IO"]),
+        )
+
+        components = {
+            "R1": _component_instance("R1"),
+            "C1": _component_instance("C1"),
+        }
+        scope = SimpleNamespace(root_schematic=tmp_path / "design.xml")
+
+        enriched = ProjectIndexer._enrich_cadence_pages(scope, components, [], {})
+
+        assert enriched is not None
+        _components, hierarchy, _sheet_names = enriched
+        assert {sheet.sheet_path: sheet.component_count for sheet in hierarchy} == {
+            "/page1": 1,
+            "/page2": 1,
+        }
 
 
 if __name__ == "__main__":
