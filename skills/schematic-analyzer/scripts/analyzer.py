@@ -523,6 +523,13 @@ class SchematicAnalyzer:
                 "project_page_count": len(page_navigation),
                 "project_component_count": len(self.project_index.components),
                 "project_dnp_count": self.project_index.statistics.dnp_filtered,
+                # Facts per excluded part; electrical-vs-mechanical split is
+                # decided at review time from value/footprint, not here.
+                "project_dnp_parts": [
+                    dict(part) for part in self.project_index.statistics.dnp_parts
+                ],
+                "project_no_connect_pin_count": self.project_index.statistics.no_connect_pins,
+                "project_connectivity_warnings": list(phase_1.get("connectivity_warnings", [])),
                 "project_net_count": len(phase_1["nets"]),
                 "root_schematic_filename": self.scope.root_schematic.name,
                 "referenced_page_count": len(self.scope.referenced_sheets),
@@ -599,6 +606,11 @@ class SchematicAnalyzer:
                 "name": pair[0],
                 "pin": pair[1],
             }
+            # Preserve pin-level No Connect evidence from Cadence XML even
+            # when the authoritative Allegro netlist also contains a literal
+            # net named ``NC``. The two facts must remain distinguishable.
+            if self._pin_is_no_connect(component, str(pin_number), pin_name, comp_pin_map):
+                entry["no_connect"] = True
             # Add physical pin number from pstchip.dat
             phys_pin = comp_pin_map.get(pin_name)
             if phys_pin:
@@ -635,6 +647,15 @@ class SchematicAnalyzer:
                 sheet_path,
             ),
         }
+        # Pin-level No Connect markers (✗) from the schematic source. These
+        # pins carry no connectivity, so they never appear in ``nets``.
+        no_connect_pins = [
+            {"name": str(p.get("name", "")), "pin": str(p.get("number", ""))}
+            for p in component.pins
+            if p.get("no_connect", False)
+        ]
+        if no_connect_pins:
+            payload["no_connect_pins"] = no_connect_pins
         return payload
 
     def query_component_match(self, text: str, *, include_all: bool = False) -> dict[str, Any]:
@@ -718,6 +739,10 @@ class SchematicAnalyzer:
                 "pin": pin_nm,
                 "page": page_name,
             }
+            if self._pin_is_no_connect(
+                component, pin_number, pin_nm, comp_nets.get("pin_number_map", {})
+            ):
+                pin_entry["no_connect"] = True
             # Add physical pin number from pstchip.dat
             comp_pin_map = comp_nets.get("pin_number_map", {})
             phys_pin = comp_pin_map.get(pin_nm)
@@ -1217,15 +1242,15 @@ class SchematicAnalyzer:
         return self.scope.project_name
 
     @staticmethod
-    def _merge_multipad_pins(nets: list[dict[str, str]]) -> list[dict[str, str]]:
+    def _merge_multipad_pins(nets: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Merge multi-pad pins sharing the same net (e.g. VBUS#a4..#b9 → VBUS ×4)."""
         from collections import OrderedDict
 
-        grouped: OrderedDict[str, list[dict[str, str]]] = OrderedDict()
+        grouped: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
         for entry in nets:
             grouped.setdefault(entry["name"], []).append(entry)
 
-        merged: list[dict[str, str]] = []
+        merged: list[dict[str, Any]] = []
         for net_name, entries in grouped.items():
             if len(entries) <= 1:
                 merged.extend(entries)
@@ -1248,12 +1273,12 @@ class SchematicAnalyzer:
         return merged
 
     @staticmethod
-    def _merge_same_net_pins(nets: list[dict[str, str]]) -> list[dict[str, str]]:
+    def _merge_same_net_pins(nets: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Merge entries sharing the same net name into one with comma-separated pins."""
         if not nets:
             return nets
-        merged: list[dict[str, str]] = []
-        groups: dict[str, list[dict[str, str]]] = {}
+        merged: list[dict[str, Any]] = []
+        groups: dict[str, list[dict[str, Any]]] = {}
         order: list[str] = []
         for entry in nets:
             name = entry["name"]
@@ -1267,7 +1292,9 @@ class SchematicAnalyzer:
                 merged.append(entries[0])
             else:
                 pins = ",".join(e["pin"] for e in entries)
-                result: dict[str, str] = {"name": name, "pin": pins}
+                result: dict[str, Any] = {"name": name, "pin": pins}
+                if any(e.get("no_connect", False) for e in entries):
+                    result["no_connect"] = True
                 # Preserve pin_number as comma-separated if present
                 pin_nums = [e["pin_number"] for e in entries if "pin_number" in e]
                 if pin_nums:
@@ -1294,6 +1321,20 @@ class SchematicAnalyzer:
             if str(pin.get("number", "")) == str(pin_number):
                 return str(pin.get("name", "") or pin_number)
         return str(pin_number)
+
+    @staticmethod
+    def _pin_is_no_connect(component, pin_number: str, pin_name: str, pin_map: dict[str, str]) -> bool:
+        """Return the pin-level No Connect marker, if present in source XML."""
+        for pin in component.pins:
+            if not pin.get("no_connect", False):
+                continue
+            if str(pin.get("name", "")) == str(pin_name):
+                return True
+            if str(pin.get("number", "")) == str(pin_number):
+                return True
+            if pin_map.get(str(pin.get("name", ""))) == str(pin_number):
+                return True
+        return False
 
     @staticmethod
     def _extract_page_index(sheet_path: str) -> int:

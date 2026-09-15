@@ -150,6 +150,19 @@ python scripts/schematic-cli.py cache <project> --clear
 - DNP components indicate optional/alternative configuration
 - Missing connections are facts, not gaps to fill with assumptions
 
+### DNP, No Connect, and an `NC` net are different
+
+Keep these three cases separate in Cadence/Allegro reviews:
+
+- **DNP / assembly-excluded component**: an assembly property such as `ASSY=DNP`, `POPULATE=NO`, or an explicit value marker such as `DNP`/`NF`. It may be omitted from populated-board topology, but report its reference and reason when reviewing alternatives.
+- **No Connect marker**: a pin-level `IsNoConnect` annotation (✗ in the schematic). The pin is intentionally unconnected; `query --component` lists these pins under `no_connect_pins`. It is never connectivity.
+- **`NC` terminal on a relay / switch / contactor**: *Normally Closed* — a live terminal that conducts in the rest (de-energized) state. Check it as a functional connection (COM/NO/NC pairing, load path). Never interpret it as "not connected".
+- **Net named `NC` in pstxnet.dat**: never a real net — PSTWRITER's aggregation of NoConnect-marked pins. The tooling strips it from connectivity; if it ever surfaces (overview `project_connectivity_warnings`), a member pin lacked its ✗ marker — report that as an anomaly.
+
+For review output, report DNP counts separately from no-connect pin counts and from nets whose literal name is `NC`. `overview` lists each DNP part with its value and footprint — classify electrical DNP parts vs mechanical exclusions (mounting holes, fasteners) from those facts at review time; the tooling does not pre-classify. Never classify a component as DNP solely because its value or a connected net is `NC`.
+
+**A naming convention is not a defect.** When design intent is ambiguous, state the facts and ask — do not prescribe rework based on textbook practice.
+
 When determining interface mode or device configuration:
 1. Check ALL signal lines, not just the ones that are connected
 2. Unconnected lines are evidence of operating mode, not "incomplete design"

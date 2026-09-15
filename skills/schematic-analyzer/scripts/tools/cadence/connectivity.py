@@ -93,6 +93,20 @@ class CadenceConnectivityBuilder:
         all_nets_data: dict[str, NetConnection] = {}
         component_nets: dict[str, dict] = {}
         warnings: list[str] = []
+        # Refs -> pin identifiers (names, position indexes, and physical pin
+        # numbers bridged via pstchip.dat) that carry a No Connect marker.
+        marked_pins: Optional[dict[str, set[str]]] = None
+        if parser is not None:
+            marked_pins = {}
+            for ref, comp in project_index.components.items():
+                marked = parser.get_no_connect_pins(ref)
+                if not marked:
+                    continue
+                if pin_number_map:
+                    part = pin_number_map.get(self._extract_part_name(comp.lib_id), {})
+                    marked = marked | {p for func, p in part.items() if func in marked}
+                marked_pins[ref] = marked
+        self._verify_no_connect_net(pin_net_map, marked_pins, warnings)
         if source == "xml_coordinate":
             warnings.append("Using XML coordinate matching (no pstxnet.dat found). "
                           "For higher accuracy, export Allegro netlist.")
@@ -151,6 +165,47 @@ class CadenceConnectivityBuilder:
             component_nets=component_nets,
             warnings=warnings,
         )
+
+    @staticmethod
+    def _verify_no_connect_net(
+        pin_net_map: dict[str, dict[str, str]],
+        marked_pins: Optional[dict[str, set[str]]],
+        warnings: list[str],
+    ) -> None:
+        """Net ``NC`` in pstxnet.dat is PSTWRITER's aggregation of
+        NoConnect-marked pins — a dummy net, not real connectivity.
+
+        When every member pin carries the marker, the entries are stripped so
+        the net never reaches net lists, counts, or neighbor analysis. An
+        unmarked member is unexpected: the net is kept and reported.
+        """
+        members = [
+            (ref, pin)
+            for ref, pin_nets in pin_net_map.items()
+            for pin, net in pin_nets.items()
+            if net.upper() == "NC"
+        ]
+        if not members:
+            return
+        if marked_pins is None:
+            warnings.append(
+                "Net 'NC' found but OrCAD XML is unavailable to verify "
+                "NoConnect markers; kept as a real net."
+            )
+            return
+        unmarked = [
+            (ref, pin) for ref, pin in members
+            if pin not in marked_pins.get(ref, set())
+        ]
+        if unmarked:
+            warnings.append(
+                "Net 'NC' has pins without NoConnect markers: "
+                + ", ".join(f"{ref}.{pin}" for ref, pin in unmarked)
+                + " — unexpected; PSTWRITER normally aggregates only marked pins."
+            )
+            return
+        for ref, pin in members:
+            pin_net_map[ref].pop(pin)
 
     @staticmethod
     def _extract_part_name(library_id: str) -> str:
