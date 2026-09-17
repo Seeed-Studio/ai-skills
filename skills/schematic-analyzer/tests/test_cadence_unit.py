@@ -145,6 +145,77 @@ class TestCadenceDnpFiltering:
         assert parser.get_component_by_reference("R2") is None
         assert parser.get_component_connections("R2") == {"error": "Component R2 not found"}
 
+    def test_nc_value_is_not_treated_as_dnp(self):
+        parser = object.__new__(CadenceXMLParser)
+        assert parser._is_dnp_component({}, "NC") is False
+        assert parser._is_dnp_component({}, "DNP") is True
+
+    def test_no_connect_pin_is_metadata_not_nc_net(self):
+        parser = object.__new__(CadenceXMLParser)
+        parser._parts = []
+        parser._components = []
+        # The public component model must preserve the pin-level marker; a
+        # net named NC is handled independently by pstxnet.dat parsing.
+        component = SchematicComponent(
+            reference="U1",
+            value="IC",
+            library_id="Custom:IC",
+            pins=[{"number": "1", "name": "RESV", "no_connect": True}],
+            flags={"dnp": False},
+        )
+        parser._components.append(component)
+        parser._ensure_parsed = lambda: None
+        assert parser.get_all_components()[0].pins[0]["no_connect"] is True
+
+    def test_dnp_components_are_inspectable_separately(self):
+        parser = object.__new__(CadenceXMLParser)
+        parser._components = [
+            SchematicComponent(reference="C1", value="10pF", library_id="Device:C", flags={"dnp": True}),
+            SchematicComponent(reference="U1", value="IC", library_id="Custom:IC", flags={"dnp": False}),
+        ]
+        parser._ensure_parsed = lambda: None
+        assert [c.reference for c in parser.get_dnp_components()] == ["C1"]
+        assert [c.reference for c in parser.get_all_components()] == ["C1", "U1"]
+
+    def test_no_connect_pin_count_is_separate_from_dnp(self):
+        parser = object.__new__(CadenceXMLParser)
+        parser._components = [
+            SchematicComponent(
+                reference="U1", value="IC", library_id="Custom:IC",
+                pins=[{"number": "1", "name": "RESV", "no_connect": True}],
+                flags={"dnp": False},
+            ),
+            SchematicComponent(
+                reference="C1", value="10pF", library_id="Device:C",
+                pins=[], flags={"dnp": True},
+            ),
+        ]
+        parser._ensure_parsed = lambda: None
+        assert parser.get_no_connect_pin_count() == 1
+
+    def test_nc_net_stripped_when_all_members_marked(self):
+        pin_net_map = {"U2": {"6": "NC", "A1": "SDA"}, "U4": {"RESV1": "NC"}}
+        marked = {"U2": {"NC1", "NC2", "6", "9"}, "U4": {"RESV1", "2", "3"}}
+        warnings: list[str] = []
+        CadenceConnectivityBuilder._verify_no_connect_net(pin_net_map, marked, warnings)
+        assert pin_net_map == {"U2": {"A1": "SDA"}, "U4": {}}
+        assert warnings == []
+
+    def test_nc_net_kept_and_reported_when_member_unmarked(self):
+        pin_net_map = {"U2": {"6": "NC"}, "U4": {"RESV1": "NC"}}
+        marked = {"U2": {"NC1", "NC2", "6", "9"}}
+        warnings: list[str] = []
+        CadenceConnectivityBuilder._verify_no_connect_net(pin_net_map, marked, warnings)
+        assert pin_net_map == {"U2": {"6": "NC"}, "U4": {"RESV1": "NC"}}
+        assert len(warnings) == 1 and "U4.RESV1" in warnings[0]
+
+    def test_nc_net_kept_when_xml_unavailable(self):
+        pin_net_map = {"U2": {"6": "NC"}}
+        warnings: list[str] = []
+        CadenceConnectivityBuilder._verify_no_connect_net(pin_net_map, None, warnings)
+        assert pin_net_map == {"U2": {"6": "NC"}}
+        assert len(warnings) == 1
+
     def test_connectivity_ignores_refs_filtered_from_project_index(self):
         builder = CadenceConnectivityBuilder()
         builder._get_pin_net_map = lambda root: (

@@ -59,6 +59,10 @@ class IndexStatistics:
     total_sheets: int
     duplicate_reference_count: int
     dnp_filtered: int = 0
+    no_connect_pins: int = 0
+    # Facts only: which parts are assembly-excluded and their value/footprint.
+    # Electrical-vs-mechanical classification is a review-layer decision.
+    dnp_parts: tuple[dict[str, str], ...] = ()
 
 
 @dataclass
@@ -117,11 +121,22 @@ class ProjectIndexer:
         hierarchy: list[SheetInfo] = []
         sheet_name_to_path: dict[str, str] = {}
         dnp_filtered = 0
+        no_connect_pins = 0
+        dnp_parts: list[dict[str, str]] = []
 
         for record in self._build_sheet_records(scope):
             parser = get_schematic_parser(str(record.file_path), include_child_sheets=False)
             local_components = parser.get_components()
             dnp_filtered += parser.get_dnp_count()
+            no_connect_pins += getattr(parser, "get_no_connect_pin_count", lambda: 0)()
+            for excluded in getattr(parser, "get_dnp_components", lambda: [])():
+                dnp_parts.append(
+                    {
+                        "reference": excluded.reference,
+                        "value": excluded.value,
+                        "footprint": excluded.footprint or "",
+                    }
+                )
             hierarchy.append(
                 SheetInfo(
                     sheet_name=record.sheet_name,
@@ -138,12 +153,22 @@ class ProjectIndexer:
                 pins = []
                 for pin in component.pins:
                     if isinstance(pin, dict):
-                        pins.append({"number": pin.get("number", ""), "name": pin.get("name", "")})
+                        pins.append(
+                            {
+                                "number": pin.get("number", ""),
+                                "name": pin.get("name", ""),
+                                # Preserve Cadence's pin-level No Connect
+                                # marker.  This is deliberately independent
+                                # of a literal net named ``NC``.
+                                "no_connect": bool(pin.get("no_connect", False)),
+                            }
+                        )
                     else:
                         pins.append(
                             {
                                 "number": getattr(pin, "number", ""),
                                 "name": getattr(pin, "name", ""),
+                                "no_connect": bool(getattr(pin, "no_connect", False)),
                             }
                         )
 
@@ -181,6 +206,8 @@ class ProjectIndexer:
                 total_sheets=len(hierarchy),
                 duplicate_reference_count=0,  # TODO: compute from actual instance resolution
                 dnp_filtered=dnp_filtered,
+                no_connect_pins=no_connect_pins,
+                dnp_parts=tuple(dnp_parts),
             ),
         )
 

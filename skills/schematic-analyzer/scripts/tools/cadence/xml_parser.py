@@ -41,8 +41,13 @@ _CADENCE_DNP_PROP_RULES: list[tuple[str, frozenset[str]]] = [
 ]
 
 # Value-based DNP markers — if component value matches exactly, it's DNP.
+#
+# Important: ``NC`` is intentionally absent.  In Cadence/Allegro exports NC is
+# commonly a legitimate *net name* used to tie reserved pins together.  It is
+# not equivalent to an OrCAD no-connect marker (which is represented on the
+# individual PortInstScalar by IsNoConnect).
 _CADENCE_DNP_VALUE_MARKERS: frozenset[str] = frozenset({
-    "DNP", "NC", "NF", "NO STUFF", "DNS", "DO NOT POPULATE",
+    "DNP", "NF", "NO STUFF", "DNS", "DO NOT POPULATE",
 })
 
 
@@ -813,6 +818,42 @@ class CadenceXMLParser:
         """Return only populated components (DNP excluded)."""
         return [c for c in components if not c.flags.get("dnp", False)]
 
+    def get_all_components(self) -> list[SchematicComponent]:
+        """Return all schematic components, including DNP/assembly-excluded parts."""
+        self._ensure_parsed()
+        return list(self._components)
+
+    def get_dnp_components(self) -> list[SchematicComponent]:
+        """Return only components excluded by assembly/DNP flags."""
+        self._ensure_parsed()
+        return [c for c in self._components if c.flags.get("dnp", False)]
+
+    def get_no_connect_pin_count(self) -> int:
+        """Return the number of pin-level IsNoConnect markers in the XML."""
+        self._ensure_parsed()
+        return sum(
+            1 for c in self._components for pin in c.pins
+            if pin.get("no_connect", False)
+        )
+
+    def get_no_connect_pins(self, reference: str) -> set[str]:
+        """Return pin names and numbers carrying a No Connect marker.
+
+        Used to verify that pstxnet.dat's dummy net ``NC`` aggregates only
+        NoConnect-marked pins.
+        """
+        self._ensure_parsed()
+        ref = reference.upper()
+        marked: set[str] = set()
+        for component in self._components:
+            if component.reference.upper() != ref:
+                continue
+            for pin in component.pins:
+                if pin.get("no_connect", False):
+                    marked.add(str(pin.get("name", "")))
+                    marked.add(str(pin.get("number", "")))
+        return marked
+
     def _build_components(self) -> None:
         """Build SchematicComponent list from parsed parts.
 
@@ -840,6 +881,9 @@ class CadenceXMLParser:
                         "number": pin.position_index,
                         "name": pin.name,
                         "electrical_type": pin.pin_type,
+                        # Keep schematic No Connect evidence distinct from a
+                        # net literally named ``NC`` in pstxnet.dat.
+                        "no_connect": pin.is_no_connect,
                     })
 
             # Merge properties
