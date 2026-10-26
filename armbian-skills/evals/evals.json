@@ -1,0 +1,121 @@
+{
+  "skill_name": "armbian-skills-suite",
+  "evals": [
+    {
+      "id": 1,
+      "name": "capabilities-shared-header-net",
+      "skill_name": "armbian-device-capabilities",
+      "prompt": "我是初学者，用的是 Seeed reComputer RK3588 DevKit，板上 PCB V1.0、J10。想把物理 23 和 40 脚接两个 LED，分别控制高低电平，可以吗？请结合附件说明两脚的关系、电压和 Linux GPIO 如何定位，给我接线图或端点示意和下一步。现在只做能力咨询，不操作设备。",
+      "expected_output": "判断两个物理位置是否独立，给出有证据的映射、电气条件和端点示意，区分文档与运行事实。",
+      "assertions": [
+        "明确物理 J10-23 与 J10-40 是同一 GPIO2_C0 网络、gpio2 本地 offset 16，不能独立或相反电平驱动。",
+        "区分 gpio2 控制器与 /dev/gpiochip* 动态编号，要求按 DT 节点/标识解析并检查当前 mux/consumer。",
+        "正确区分 SoC 侧 1.8V、转换后排针侧标称 3.3V，不承诺 5V 容忍或未经证据的电流能力。",
+        "提供不会把两个同网位置当独立输出的接线端点/示意，并说明独立 LED 应改选经核实的独立网络。",
+        "区分静态板级资料与当前功能证据，保留未确认的设备访问、电气/接线和功能验证条件，未执行硬件控制。"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "capabilities-unknown-board-acceleration",
+      "skill_name": "armbian-device-capabilities",
+      "prompt": "这台自研 RK3588 载板跑 Armbian。我把当前采集记录放在附件了。帮我判断 NPU 推理、GPU 图形、GPU 计算、视频解码和编码分别到哪一步，尤其解释为什么节点和库都有但应用还不一定能用。只分析附件；没有设备连接，别改系统。也别套用其他载板的 40pin。",
+      "expected_output": "按功能区分硬件、系统、应用访问和功能证据，识别软件回退、权限缺口及未知项。",
+      "assertions": [
+        "保留自研载板/未知 revision，不借用 Seeed 或其他板的排针路由。",
+        "NPU 结论识别 vision 用户无 video 组、EACCES；节点/库存在及旧 root 成功均不等于当前应用推理通过。",
+        "GPU 图形识别 llvmpipe 软件回退；GPU compute/OpenCL 未执行，不能把两者合并认定硬件可用。",
+        "视频解码和编码分别判为未验证，ffmpeg decoder 列表不能作为实际运行通过。",
+        "按硬件、系统、实际应用访问、功能层组织来源/目标/时间明确的证据与下一步，不改系统或虚报运行。"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "application-node-hold-cancel",
+      "skill_name": "armbian-hardware-application",
+      "prompt": "附件是现有 Node.js 业务服务，保留语言和现有 /status 行为。请直接加 POST /hold（JSON {duration_ms}，1..1000）和 POST /cancel：独占已有 gpio owner 接口，保持输出期间 /status 仍应及时响应；并发 hold 返回 409；取消或到期只释放一次；失败不能留下未处理 Promise。沿用注入 backend，提供自动化离线测试。真实设备暂时连不上，端点映射也尚未确认，所以本次完成应用集成，不写真实 GPIO、不装守护进程。",
+      "expected_output": "在原 HTTP 入口实现有界异步保持、取消、竞争和错误处理；保留旧业务，离线测试并区分物理验收。",
+      "assertions": [
+        "实现原 HTTP 服务 /hold、/cancel，校验整数 duration_ms 范围 1..1000，竞争的 hold 返回409。",
+        "原 /status 的 ok/statusHits 行为保持，hold 期间仍能及时响应。",
+        "到期和多次/并发取消竞争时，每个已获取 lease 恰好调用一次 release，且取消后允许后续 hold。",
+        "取消发生在 acquire 未返回时不遗留资源；setValue 抛错也释放获取到的 lease。",
+        "acquire/setValue/release 异常均不会产生未处理 rejection，错误有可观察结果。",
+        "沿用注入 backend 完成实际代码集成和可运行测试，未改为外部 GPIO 命令或伪称物理通过。"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "application-python-sensor-integration",
+      "skill_name": "armbian-hardware-application",
+      "prompt": "请在附件现有 Python asyncio 采集器增加 AHT20 温湿度采样，沿用 transport 注入和旧 counter 字段，新增 temperature_c、humidity_pct。协议记录在附件。传感器忙状态应有超时，校验错误应明确报错，不能阻塞 asyncio。直接交付代码与可运行离线测试。目标是自研 RK3576 载板，无实时连接，I2C 路由未知；不要猜总线号或扫描，保留已知地址 0x38 的配置入口。",
+      "expected_output": "扩展原采集数据流，正确转换、CRC、忙超时和异步等待，保持原功能并说明设备验证缺口。",
+      "assertions": [
+        "按提供帧布局和公式正确返回 temperature_c 与 humidity_pct，通过独立已知帧检查。",
+        "扩展原 Collector.collect，保留递增 counter 和 transport 注入，未用独立示例替代原数据流。",
+        "忙状态有有限超时，等待为异步，避免永久忙或阻塞事件循环。",
+        "CRC 错误、短帧和未校准状态明确报错，不返回伪造有效读数。",
+        "transport 异常不被吞成正常数据，正常采样时其他 asyncio 任务能继续运行。",
+        "0x38 地址有配置入口，无臆造 /dev/i2c-N、总线扫描或真实硬件通过声明。"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "deploy-wrong-abi-one-shot",
+      "skill_name": "armbian-application-deploy",
+      "prompt": "附件是我们准备发给 Armbian aarch64 设备的一次性 C 诊断工具和部署约定。请检查现成 artifact 能否部署，尽量完成离线部署准备并提供可执行的 staging、校验、切换和恢复命令。目标目前不可连接，不能伪造运行结果。本工具只运行一次，不需要开机服务；保留用户 calibration.json。",
+      "expected_output": "发现 artifact 架构错误，提供正确构建和原项目部署恢复方案，不虚报实际部署，不引入 systemd。",
+      "assertions": [
+        "识别现成 ELF 为 x86-64 且截断，拒绝将其视为 aarch64 可部署/可运行产物。",
+        "给出 aarch64 构建和目标 glibc/interpreter/NEEDED 兼容检查，未把 host 构建当目标验证。",
+        "提供具体可执行 staging、digest校验、版本目录、原子 current 切换和可执行恢复方案。",
+        "保留 calibration.json，遵循一次性工具部署约定，不引入开机服务。",
+        "将准备完成与未实际部署/未目标运行分开，并包含真实运行用户和业务输出的验收。"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "deploy-service-device-access",
+      "skill_name": "armbian-application-deploy",
+      "prompt": "这个 Armbian 采集服务 systemctl 显示 active，但新版本一直报 Permission denied。附件有 unit、日志、权限和我们现有部署规则。请直接在副本里准备修复 unit 和部署/回退脚本，尽量缩小权限，保留我的校准配置。只做离线交付，无设备连接，不能实际重启或 reboot。验收应覆盖真实服务用户看到设备和业务 /ready。",
+      "expected_output": "识别服务私有 /dev 与组权限两层问题，交付最小权限变更、保留配置的部署回退及分层验收。",
+      "assertions": [
+        "同时处理 PrivateDevices 隐藏设备与 edgeapp 缺少 i2c 组两类问题，不只按 host root 访问成功判断。",
+        "交付修复 unit/必要设备访问配置，权限限于需要的用户/设备，保留适用加固，不使用 root/全局可写/sudoers。",
+        "交付可执行部署和回退脚本，恢复旧 current 和旧 unit，readiness 失败触发恢复或给出可执行恢复入口。",
+        "发布更新不覆盖或删除 /etc/edge-sensor/calibration.json。",
+        "验收包含真实服务上下文设备访问与有界 /ready 有效样本，不能只用 systemctl active 或 /healthz 判断业务成功。",
+        "明确离线准备及物理未验证，重启仅限操作说明，不实际改系统/reboot；重启策略考虑永久配置错误。"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "verify-mixed-accelerator-fallback",
+      "skill_name": "armbian-application-verify",
+      "prompt": "同事说我们的 RK3588 视频 AI 流水线全硬件加速了，因为模型结果正确、CPU 占用低、/dev 下节点也齐。帮我审核附件这次运行的记录，逐段给出 NPU、GPU、视频解码和编码的结论、证据和下一步复现方案。只能分析记录，不能登录目标，不要把历史成功当成当前通过。",
+      "expected_output": "识别当前 NPU CPU provider、GPU llvmpipe、VPU 解码与编码差异，分别判断正确性和真实后端。",
+      "assertions": [
+        "根据当前 ORT CPUExecutionProvider/profile 判定 NPU 未被使用，不能用节点/库/低CPU反推。",
+        "根据 llvmpipe 判定当前 GPU 图形软件渲染，并区分图像正确与硬件加速。",
+        "视频分段判定：h264_rkmpp+MPP+输出证据支持当前硬件解码；libx264 是软件编码。",
+        "保留当前正确性通过/样本范围，排除历史不同内核/root结果及低CPU为本次全硬件证明。",
+        "给出按真实用户、固定模型/输入、产物/运行版本及各后端重测的具体复现计划，未伪造登录或物理观察。"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "verify-gpio-release-evidence",
+      "skill_name": "armbian-application-verify",
+      "prompt": "这个 GPIO 业务取消后我担心外设仍然被拉高。附件有 owner 实现和本次日志，同事说 release 成功且 readback=0 就证明恢复原状态了。请审核这一说法，运行可做的离线检查，给出具体的现场验收步骤和恢复建议。原始方向/电压没有记录，不能连接板子，不要擅自给出 LOW 或 input 的恢复操作。",
+      "expected_output": "区分请求释放、配置恢复和实测电压，发现 owner 竞争释放缺陷，运行离线复现且不伪造物理结果。",
+      "assertions": [
+        "明确请求 release、方向/配置恢复、实测电压是不同事实，后续 readback=0 不证明原状态恢复或外设电压。",
+        "原方向/偏置/mux/电压未记录时不承诺精确恢复，不无条件设置 LOW/input。",
+        "实际运行离线检查并复现并发 cancel 导致同一 lease 重复 release 的缺陷。",
+        "以本次目标/记录为依据，区分日志、历史用户报告、离线测试和未进行的物理验收。",
+        "提供映射/接线确认后用仪表检查保持期间、取消后及失败路径的具体有界验收和停止方法。",
+        "恢复建议以已知状态/现有owner为依据，不操作未知线路、不连接目标、不虚报测量。"
+      ]
+    }
+  ]
+}
