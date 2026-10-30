@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install complete Armbian Skill packages for Codex and/or Claude Code (Python3.9+, stdlib only)."""
+"""Install the complete Armbian hardware skill for Codex and/or Claude Code (Python3.9+, stdlib only)."""
 import argparse
 from datetime import datetime
 import hashlib
@@ -9,10 +9,11 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from armbian_skills.catalog import verify_package
 
 SUITE = Path(__file__).resolve().parents[1]
-NAMES = ('armbian-device-capabilities', 'armbian-hardware-application',
-         'armbian-application-deploy', 'armbian-application-verify')
+NAMES = ('armbian-hardware',)
 AGENTS = {'codex': '.agents', 'claude': '.claude'}
 IGNORE = shutil.ignore_patterns('__pycache__', '*.pyc', '*.pyo')
 
@@ -50,10 +51,10 @@ def plan_install(names, roots, replace):
     plan, releases = [], set()
     for name in names:
         source = SUITE / 'skills' / name
-        for rel in ('SKILL.md', 'SKILL.zh-CN.md', 'reference-release.yaml',
-                    'references/catalog.json', 'scripts/reference-match/match.py'):
+        for rel in ('SKILL.md', 'manifest.json', 'references/catalog.json', 'scripts/armbian.py'):
             if not (source / rel).is_file():
                 raise ValueError('Missing source package file: ' + str(source / rel))
+        verify_package(source)
         catalog = json.loads((source / 'references/catalog.json').read_text())
         releases.add(catalog['knowledge_release'])
         digest = fingerprint(source)
@@ -87,6 +88,7 @@ def install(plan):
                 staging[root] = Path(tempfile.mkdtemp(prefix='.armbian-install-', dir=root.parent))
             staged = staging[root] / item['target'].name
             shutil.copytree(item['source'], staged, ignore=IGNORE)
+            verify_package(staged)
             if fingerprint(staged) != item['digest']:
                 raise ValueError('Source changed or copy verification failed: ' + str(item['source']))
             item['staged'] = staged

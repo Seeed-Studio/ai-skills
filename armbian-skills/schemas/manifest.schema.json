@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "skill_version",
+    "knowledge_release",
+    "files",
+    "source_commit",
+    "source_dirty",
+    "channel"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "skill_name": {
+      "const": "armbian-hardware"
+    },
+    "skill_version": {
+      "type": "string"
+    },
+    "knowledge_release": {
+      "type": "string"
+    },
+    "files": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40,64}$"
+    },
+    "source_dirty": {
+      "type": "boolean"
+    },
+    "channel": {
+      "enum": [
+        "development",
+        "stable"
+      ]
+    }
+  }
+}

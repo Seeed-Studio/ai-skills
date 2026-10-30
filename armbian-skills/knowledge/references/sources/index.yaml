@@ -1,0 +1,573 @@
+schema_version: '1'
+id: sources.index
+kind: source_registry
+applies_to: {}
+required_refs: []
+preconditions: []
+refines: []
+excludes: []
+related: []
+sources: []
+validation_refs: []
+maturity: documented
+owner: armbian-platform-maintainers
+updated_at: '2026-10-22'
+source_entries:
+- id: source.local-board-config
+  kind: source
+  title: recomputer-rk3576-devkit.conf
+  source_type: local_file
+  workspace_path: armbian-build/config/boards/recomputer-rk3576-devkit.conf
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: 6773573b8d97721f69a0c74370400f9a05e95fc690cfd2ff3af21127763e7206
+  locator: board defaults, branch DTB and GPU/camera hooks
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-family-config
+  kind: source
+  title: seeed-rk3576.conf
+  source_type: local_file
+  workspace_path: armbian-build/config/sources/families/seeed-rk3576.conf
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: 004ff79e32b14fb2cf26ad0e2d4d2dc43acbf0be72825ecd14c1827d316e6c92
+  locator: vendor source/ref and kernel configuration
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-kernel-config
+  kind: source
+  title: linux-seeed-rk3576-vendor.config
+  source_type: local_file
+  workspace_path: armbian-build/config/kernel/linux-seeed-rk3576-vendor.config
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: d29ebeeb63d44a4963411866f7cb0ad2e45ee04d6e53c0574ed4d3fa415ed4b1
+  locator: Panfrost, RKNPU, MPP, I2C and SPI options
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-bootscript
+  kind: source
+  title: boot-seeed-rk35xx.cmd
+  source_type: local_file
+  workspace_path: armbian-build/config/bootscripts/boot-seeed-rk35xx.cmd
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: 9df7f1f1ffe393da281a58f45a4714231493ae8c53bfe148e3eae287dbbfd02b
+  locator: EEPROM magic and board code routing; fdtfile override
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.cached-vendor-dts
+  kind: source
+  title: rk3576-recomputer-rk3576-devkit.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3576-recomputer-rk3576-devkit.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: 164e4c114cb3982cf0abf0843a7c87a11a2b9e06cee0d0d24bcf4f8864c5e1d6
+  locator: compatible, GPIO line names, peripheral nodes
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.cached-pinctrl
+  kind: source
+  title: rk3576-pinctrl.dtsi
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3576-pinctrl.dtsi
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: fe6584073dd65303475db2cab39c002da11d851f63070337c9118393972aa997
+  locator: pinctrl groups for overlay targets
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.cached-soc-dtsi
+  kind: source
+  title: rk3576.dtsi
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: ee82e027db55c8e31c4e1f132f74e897f3ba79fed46ae10761e0eb6695d66293
+  locator: aliases, controller addresses and inherited defaults
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.cached-camera-dtsi
+  kind: source
+  title: recomputer-rk3576-devkit-cam.dtsi
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/recomputer-rk3576-devkit-cam.dtsi
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: 33b18be9f2100e521595afe0d594dcea442a9f7fcc2d6da3befceae4cbd9ef43
+  locator: camera/ISP candidates
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-mainline-dts
+  kind: source
+  title: rk3576-recomputer-devkit.dts
+  source_type: local_file
+  workspace_path: armbian-build/patch/kernel/archive/rockchip64-7.3/dt/rk3576-recomputer-devkit.dts
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: 854991c753d06a26d7414ac6f97b349a9af90887a16e1b414bee7978b72c3d57
+  locator: mainline compatible and header I2C description; archived source
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-uboot-dts
+  kind: source
+  title: rk3576-recomputer-rk3576-devkit.dts
+  source_type: local_file
+  workspace_path: armbian-build/patch/u-boot/legacy/u-boot-radxa-rk35xx/dt/rk3576-recomputer-rk3576-devkit.dts
+  repository: armbian-build
+  repository_commit: c771045e20d59bec66f331e5f011ac7ce52c22fa
+  sha256: 7415ea0e208056de1eced46fdb02a7bb08be203538fa73c37f62b73a203e8af0
+  locator: U-Boot compatible; not necessarily Linux compatible
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-overlays-note
+  kind: source
+  title: 3. Overlays.md
+  source_type: local_file
+  workspace_path: Armbian/3. Overlays.md
+  repository: workspace
+  repository_commit: null
+  sha256: 43154c5b30d67d8c15fde851c387b7597dd81dfb1dd7113ca2723aa02e46a80d
+  locator: camera/display examples only
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.local-extension-entry
+  kind: source
+  title: seeed_armbian_extension.sh
+  source_type: local_file
+  workspace_path: seeed_armbian_extension/seeed_armbian_extension.sh
+  repository: seeed_armbian_extension
+  repository_commit: 018cc8137def3c92c059e58c48d25cd0650e7cbc
+  sha256: ade786bf97be5d266b86c0e40defc15d467e09726d3cd6be43f0b3b980d8fdf7
+  locator: extension switches; no secrets copied
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-can0
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-can0.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-can0.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: 376d58d7947447743e2d9b2f31543dfcac289c4759052e98ff6365304d78ba38
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-can1
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-can1.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-can1.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: e00231e8bbcaec772833baffddcfabb9f363f31359cc6737d9a5f9ed47d24e65
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-i2c3
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-i2c3.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-i2c3.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: 5e90c6a192cbd16154072d0537482f62f14700b4e3a112f381aa7d36a1ce3843
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-pwm2-ch6
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-pwm2-ch6.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-pwm2-ch6.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: 070fce0fb5f8a5b1c4a4f1d507345245915ebcba8f5159230eeb697fb6fb7e08
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-uart3
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-uart3.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-uart3.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: ac55fe4522776d3396a8af2ac4e8c1ebe782905b27b9680e472b8484d84e40dc
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-40pin-uart5
+  kind: source
+  title: recomputer-rk3576-devkit-40pin-uart5.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-40pin-uart5.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: d9c23329bd05bf271511d76f93bfca2eb713f910ef4ef74aa058d45b54160e6b
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v2
+  kind: source
+  title: recomputer-rk3576-devkit-cam0-rpi-v2.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-cam0-rpi-v2.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: f650a4e284b789c8eaab06996d29a1a1cc041f105427bd294b0ddc45559f3db1
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v3
+  kind: source
+  title: recomputer-rk3576-devkit-cam0-rpi-v3.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-cam0-rpi-v3.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: c7b578abcaa949609f97e6b09a4d4c3382a8c765b5dde7c89723f29906118766
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v2
+  kind: source
+  title: recomputer-rk3576-devkit-cam1-rpi-v2.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-cam1-rpi-v2.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: f7e4f8526ba92c05029ed85f050eda7b34e262e43d47f4d3253da7ec980f0d09
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v3
+  kind: source
+  title: recomputer-rk3576-devkit-cam1-rpi-v3.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-cam1-rpi-v3.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: f9446181971367c7a808aa0f2d789ceeb589dae1c4359c8a5908a860c1114df1
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-dp-4k
+  kind: source
+  title: recomputer-rk3576-devkit-dp-4k.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-dp-4k.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: ea87db93e551afdb626071f901e2e2fb51325d8a4e44ab712b6d2e9e8f82c0d2
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-halow-wifi
+  kind: source
+  title: recomputer-rk3576-devkit-halow-wifi.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-halow-wifi.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: a632b9667e8172cf6ea78a59bcea9d7df42ef79e5ec03d4c33af7fa21eb730fe
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.overlay.recomputer-rk3576-devkit-raspi-7inch-touchscreen
+  kind: source
+  title: recomputer-rk3576-devkit-raspi-7inch-touchscreen.dts
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/overlay/recomputer-rk3576-devkit-raspi-7inch-touchscreen.dts
+  repository: linux-kernel-worktree
+  repository_commit: f694b5f9d122192cd4af529dc279b22b4cc703c3
+  sha256: ff9fc1bfb93921b9d657b985cfb8aa8343bb90306f6283799c24192a464a31ae
+  locator: overlay source; not proof of target installation or enablement
+  accessed_at: '2026-10-15'
+  scope: Host workspace only; not evidence of installed target contents
+- id: source.seeed-product
+  kind: source
+  title: RK3576-20 product page
+  source_type: official_web
+  url: https://www.seeedstudio.com/reComputer-RK3576-20-p-6816.html
+  locator: null
+  accessed_at: '2026-10-15'
+  scope: RK3576-20/30 full-system product family; exclude Module Dev Kit
+- id: source.seeed-overview
+  kind: source
+  title: RK3576 full-system overview
+  source_type: official_web
+  url: https://sensecraft.seeed.cc/ai-lab/en/tutorials/rk/edge-ai-computer/rk3576/recomputer-rk3576-overview
+  locator: Specifications
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.seeed-interfaces
+  kind: source
+  title: RK3576 full-system interface guide
+  source_type: official_web
+  url: https://sensecraft.seeed.cc/ai-lab/en/tutorials/rk/edge-ai-computer/rk3576/interface-usage-guidelines/use-recomputer-rk3576-hardware-interfaces-and-fan-control
+  locator: GPIO, LED, fan; example indices are not stable identities
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.seeed-resources
+  kind: source
+  title: RK3576 official downloads
+  source_type: official_web
+  url: https://sensecraft.seeed.cc/ai-lab/en/tutorials/rk/edge-ai-computer/rk3576/getting-start/recomputer-rk3576-system-images-and-resource-downloads
+  locator: Schematic download
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.seeed-schematic-v1
+  kind: source
+  title: RK3576 V1.0 schematic
+  source_type: official_web
+  url: https://files.seeedstudio.com/wiki/reComputer_RK/Documents/recomputer_rk3576/RECOMPUTER%20RK3576_V1.0_SCH_2026.pdf
+  locator: Visually audited PDF sheets 9, 16, 17, 35; sheet 25 EEPROM branch text; J3 and U5/U22
+  accessed_at: '2026-10-19'
+  scope: V1.0 reference document. Full J3 documentary pin-to-net/pad/power-domain trace completed; not a physical-target
+    electrical or functional measurement.
+  sha256: ca7dcfbda6eb582726b1bbd44505b40726ae7b9e2b60dc663bca75a9d921bcf8
+  bundled_excerpts:
+  - path: boards/seeed/recomputer-rk3576-devkit/revisions/v1.0/assets/schematic-sheet35-j3.png
+    sha256: b817a4eafe768c9d286c82bf9d224d4207e0775eb780e3f22c3007fe3fe617e5
+    pdf_page: 35
+    transform: aspect-preserving rendered crop
+  - path: boards/seeed/recomputer-rk3576-devkit/revisions/v1.0/assets/schematic-sheet35-translators.png
+    sha256: 58ebaf728d56573acf36e362ef5e7be8228414e37a3aa4652b87f400abb9d217
+    pdf_page: 35
+    transform: aspect-preserving rendered crop
+- id: source.linux-gpio-api
+  kind: source
+  title: Linux GPIO character device API
+  source_type: official_web
+  url: https://docs.kernel.org/userspace-api/gpio/chardev.html
+  locator: null
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.linux-gpio-lifetime
+  kind: source
+  title: Linux GPIO line request lifetime
+  source_type: official_web
+  url: https://docs.kernel.org/userspace-api/gpio/gpio-v2-get-line-ioctl.html
+  locator: null
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.rknn-project
+  kind: source
+  title: Rockchip RKNN Toolkit2/Runtime
+  source_type: official_web
+  url: https://github.com/airockchip/rknn-toolkit2/
+  locator: null
+  accessed_at: '2026-10-20'
+  scope: Documented information, not a target runtime observation
+- id: source.mesa-panfrost
+  kind: source
+  title: Mesa Panfrost driver
+  source_type: official_web
+  url: https://docs.mesa3d.org/drivers/panfrost.html
+  locator: null
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.ffmpeg
+  kind: source
+  title: FFmpeg hardware acceleration documentation
+  source_type: official_web
+  url: https://ffmpeg.org/ffmpeg.html
+  locator: null
+  accessed_at: '2026-10-15'
+  scope: Documented information, not a target runtime observation
+- id: source.seeed-rk3576-official-40pin-image
+  kind: source
+  title: Seeed RK3576 full-system 40Pin GPIO Pinout Diagram (image29.png)
+  source_type: official_web_image
+  url: https://files.seeedstudio.com/wiki/reComputer_RK/ai_lab/tutorials/image29.png
+  context_url: https://sensecraft.seeed.cc/ai-lab/en/tutorials/rk/edge-ai-computer/rk3576/interface-usage-guidelines/use-recomputer-rk3576-hardware-interfaces-and-fan-control
+  bundled_reference_path: boards/seeed/recomputer-rk3576-devkit/revisions/v1.0/assets/40pin-official.png
+  sha256: 23b7f09942d743130a6e14d6afa03ac5917c1356db265f3e04845ea38cc64096
+  accessed_at: '2026-10-15'
+  locator: 40Pin GPIO Pinout Diagram, all 40 positions and orientation; visually inspected
+  scope: Official physical-position labels only; no explicit PCB revision, per-pin SoC/Linux mapping or measured
+    electrical limits.
+- id: source.linux-i2c-api
+  kind: source
+  title: Linux I2C userspace device API
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://docs.kernel.org/i2c/dev-interface.html
+- id: source.linux-spidev
+  kind: source
+  title: Linux SPI userspace API
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://docs.kernel.org/spi/spidev.html
+- id: source.linux-pwm
+  kind: source
+  title: Linux PWM interface
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://docs.kernel.org/driver-api/pwm.html
+- id: source.linux-can
+  kind: source
+  title: Linux SocketCAN
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://docs.kernel.org/networking/can.html
+- id: source.rust-ffi
+  kind: source
+  title: Rustonomicon FFI
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://doc.rust-lang.org/nomicon/ffi.html
+- id: source.go-cgo
+  kind: source
+  title: Go cgo documentation
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://pkg.go.dev/cmd/cgo
+- id: source.node-child-process
+  kind: source
+  title: Node child_process
+  source_type: official_web
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  url: https://nodejs.org/api/child_process.html
+- id: source.local-rk3588-board
+  kind: source
+  title: Armbian RK3588 board configuration
+  source_type: local_file
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  workspace_path: armbian-build/config/boards/recomputer-rk3588-devkit.conf
+  sha256: a9525d4cc72a0fcf02671a84c15c13bb1f2209b61cd49c424cbbbe66aff6adec
+  locator: Board identity, branch DTB, Panthor/Mesa choice and firmware requirements
+- id: source.local-rk3588-dts
+  kind: source
+  title: Armbian cached mainline RK3588 board DTS
+  source_type: local_file
+  accessed_at: '2026-10-19'
+  scope: Documentation/source review only; no current target or application functional result
+  workspace_path: armbian-build/patch/kernel/archive/rockchip64-7.2/dt/rk3588-recomputer-devkit.dts
+  sha256: 410d52e148636602f3685b299ee98984780dbc8f947b4172bb18954436fbaea4
+  locator: Root model/compatible; no pinout validation performed
+- id: source.local-rk3588-vendor-dts
+  kind: source
+  title: Cached vendor RK3588 full-system Devkit DTS
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3588-recomputer-rk3588-devkit.dts
+  sha256: cdf43a2f3fa002d1fcc60dacd03fc8a2a6b46527a03bf3b9b97cd41421fb1e5e
+  accessed_at: '2026-10-21'
+  scope: Cached RK3588 content despite rk3576 cache directory name. SPI1 M0/spidev and PWM2 M2 fan are source configuration
+    only. Most PIN_* labels conflict with official V1.0 header routing; never use these as physical mapping authority.
+- id: source.seeed-rk3588-v1-schematic
+  kind: source
+  title: Official RK3588 V1.0 schematic, full J10 and voltage paths reviewed
+  source_type: official_web
+  sha256: 4baca77c0ca9684a37f780131f02b1c0ef04a938be9f2522126b1a02608215e7
+  accessed_at: '2026-10-21'
+  scope: All 40 J10 documentary trace, U32/U33/U34, GPIO domains and shared routes, including the shared GPIO2_C0_3V3
+    net at J10-23/40; not physical continuity, actual assembly, electrical limits or functional validation.
+  url: https://files.seeedstudio.com/wiki/reComputer_RK/Documents/recomputer_rk3588/RECOMPUTER_RK3588_V10_0119.pdf
+  context_url: https://sensecraft.seeed.cc/ai-lab/en/tutorials/rk/edge-ai-computer/rk3588/getting-start/recomputer-rk3588-system-images-and-resource-downloads
+  locator: PDF sheets7,11,15,28 (pads, rails, pullups, full J10 and translators); shared routes referenced on sheets22,29,33
+  bundled_excerpts:
+  - path: boards/seeed/recomputer-rk3588-devkit/revisions/v1.0/assets/schematic-sheet28-j10.png
+    sha256: 845dcaeb1d2b3dedf6c6c541f57edb386b836b2071be40208b2d344b3726d751
+    pdf_page: 28
+    transform: aspect-preserving rendered crop
+  - path: boards/seeed/recomputer-rk3588-devkit/revisions/v1.0/assets/schematic-sheet28-u34.png
+    sha256: 7ef6202f0188686ae180ec35c9bf999f79a63660033c97e7da4ddd1534965690
+    pdf_page: 28
+    transform: aspect-preserving rendered crop
+  - path: boards/seeed/recomputer-rk3588-devkit/revisions/v1.0/assets/schematic-sheet28-translators.png
+    sha256: b45072063ed1c174988644dee7189640ae99c35c4a10689a65dae65d43c01b9e
+    pdf_page: 28
+    transform: aspect-preserving rendered crop
+- id: source.local-rk3588-soc-dtsi
+  kind: source
+  title: Vendor RK3588 SoC GPIO controller definition
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3588s.dtsi
+  sha256: ab519a0183759b475c32879dc7d8a3a18ce2a03f1d52d842cb36d6f0bc7f34b5
+  accessed_at: '2026-10-21'
+  scope: GPIO0..4 controller nodes/labels and bank-local line numbering; does not establish physical pin routing.
+- id: source.rust-owned-fd
+  kind: source
+  title: Rust standard library OwnedFd lifetime and ownership
+  source_type: official_web
+  url: https://doc.rust-lang.org/stable/std/os/fd/struct.OwnedFd.html
+  accessed_at: '2026-10-20'
+  scope: API ownership reference, not a GPIO implementation or hardware acceptance.
+- id: source.aht20-v11-manual
+  kind: source
+  title: Aosong AHT20 manufacturer manual 2020/04 V1.1, Seeed hosted
+  source_type: official_manufacturer_manual
+  url: https://files.seeedstudio.com/wiki/Grove-AHT20_I2C_Industrial_Grade_Temperature_and_Humidity_Sensor/AHT20-datasheet-2020-4-16.pdf
+  accessed_at: '2026-10-20'
+  locator: Pages6/8/9/10, shared bus, seven-byte CRC and conversion, revision history
+  scope: Protocol/electrical documentation; supersedes 2019/12 V1.0 shared-bus/read descriptions. Not electronic
+    chip identity or temperature accuracy evidence.
+- id: source.rknn-v232-sdk
+  kind: source
+  title: Official RKNN-Toolkit2 v2.3.2 runtime/API and conversion resources
+  source_type: official_web
+  url: https://github.com/airockchip/rknn-toolkit2/tree/v2.3.2
+  accessed_at: '2026-10-20'
+  locator: rknpu2/runtime/Linux/librknn_api/include/rknn_api.h and aarch64/librknnrt.so; packages/x86_64 2.3.2 conversion
+    wheel
+  artifact_sha256:
+    header: c48e11a6f41b451a5fd1e4ad774ea60252d3d94f78bee9b21ea3d21b21deba9a
+    runtime_aarch64: d31fc19c85b85f6091b2bd0f6af9d962d5264a4e410bfb536402ec92bac738e8
+  scope: Pinned official SDK API/runtime reference; verify the actual application ABI, driver/runtime and converted
+    model on each target. SDK files are not bundled.
+- id: source.local-rk3588-pinctrl
+  kind: source
+  title: rk3588s-pinctrl.dtsi
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3588s-pinctrl.dtsi
+  sha256: 31d8f0526c55286ad5ae13017bb3b51522b1500b044021b3d54835154fe649f2
+  accessed_at: '2026-10-21'
+  scope: I2C3 M1, I2C6 M0, UART2 M0, UART4 M0 and selected PWM mux candidates; source capability only, not installed
+    target mux or ownership.
+- id: source.local-rk3588-vccio3-pinctrl
+  kind: source
+  title: rk3588-vccio3-pinctrl.dtsi
+  source_type: local_file
+  workspace_path: armbian-build/cache/sources/linux-kernel-worktree/6.1__seeed-rk3576__arm64/arch/arm64/boot/dts/rockchip/rk3588-vccio3-pinctrl.dtsi
+  sha256: 8908b1b9ab3b48729f79d83a0a8d6c82626b7c012da1b877ecd998eee1ad696c
+  accessed_at: '2026-10-21'
+  scope: SPI1 M0 pins/CS0 and PWM2 M2; SPI1 CS1 M0 is GPIO2_C4, not J10-26; source capability only, not installed
+    target mux or ownership.
+- id: source.maintainer-rk3588-j10-orientation
+  kind: source
+  title: Maintainer-confirmed RK3588 J10 component-side orientation
+  source_type: maintainer_confirmation
+  accessed_at: '2026-10-22'
+  locator: Component side facing viewer, J10 along top edge; upper row39 to1 left-to-right, lower row40 to2; pins1/2
+    at right end.
+  scope: Static board-view orientation only. Pin-to-net/electrical mapping comes from the separate official V1.0
+    schematic; current target orientation and wiring require per-task confirmation.
+- id: source.vulkan-device-selection
+  kind: source
+  title: Khronos Vulkan Loader physical device enumeration and selection
+  source_type: official_web
+  url: https://github.com/KhronosGroup/Vulkan-Loader/blob/main/docs/LoaderDriverInterface.md
+  locator: Physical Device Sorting
+  accessed_at: '2026-10-29'
+  scope: Enumeration/sorting does not force the application's device selection; not a target execution observation.
+- id: source.libgpiod-tools
+  kind: source
+  title: Official libgpiod command-line tools and gpioset documentation
+  source_type: official_web
+  url: https://libgpiod.readthedocs.io/en/master/gpioset.html
+  locator: Synopsis and chip option; version must be checked against target help
+  accessed_at: '2026-10-29'
+  scope: Upstream development documentation, not the installed target version; verify target --version and --help before use.

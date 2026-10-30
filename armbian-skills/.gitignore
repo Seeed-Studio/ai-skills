@@ -7,3 +7,14 @@ evaluation/
 evidence/
 reports/
 runtime-snapshot.yaml
+
+# Generated self-contained runtime payload (build before installing)
+skills/armbian-hardware/references/
+skills/armbian-hardware/scripts/
+skills/armbian-hardware/workflows/
+skills/armbian-hardware/templates/
+skills/armbian-hardware/manifest.json
+
+# Local validation summaries
+/release/VALIDATION.md
+/release/VALIDATION.zh-CN.md

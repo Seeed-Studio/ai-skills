@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "target": {
+    "board_ids": null,
+    "soc_ids": null,
+    "hardware_revisions": null
+  },
+  "task": {
+    "capabilities": null,
+    "operations": null,
+    "languages": null
+  },
+  "facts": {
+    "stack_ids": null,
+    "versions": {}
+  }
+}

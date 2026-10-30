@@ -1,0 +1,3 @@
+interface:
+  display_name: "Armbian Hardware"
+  short_description: "Build, deploy and diagnose Armbian hardware applications"

@@ -1,3 +1,0 @@
-interface:
-  display_name: "Armbian Application Verification"
-  short_description: "Verify application behavior and actual hardware execution"

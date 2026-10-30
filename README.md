@@ -19,21 +19,13 @@ This repository collects and maintains AI skill libraries for Seeed products, pr
 
 - **[cv181x-media](skills/cv181x-media/README.md)** - Complete multimedia application development guide for reCamera with Sophgo CV181X/CV182X/CV180X chips, covering 15+ core modules including video input/output, encoding/decoding, and audio processing
 
-- **[armbian-device-capabilities](armbian-skills/skills/armbian-device-capabilities/README.md)** - Discover and explain Armbian device interfaces, accelerators, electrical constraints, and application readiness
+- **[armbian-hardware](armbian-skills/README.md)** - One skill for Armbian capabilities, hardware application integration, deployment and diagnosis, using the existing project's language and native tools.
 
-- **[armbian-hardware-application](armbian-skills/skills/armbian-hardware-application/README.md)** - Extend existing applications or build hardware features using the project's language and deployment model
-
-- **[armbian-application-deploy](armbian-skills/skills/armbian-application-deploy/README.md)** - Deploy hardware applications with target ABI, runtime, device access, readiness, and recovery checks
-
-- **[armbian-application-verify](armbian-skills/skills/armbian-application-verify/README.md)** - Verify application behavior, physical hardware effects, actual acceleration backends, and resource cleanup
-
-The Armbian suite is **V1.0.0**, with four independent Skills and static references currently covering reComputer RK3576 / RK3588 DevKit and a shared workflow designed for additional Armbian platforms. Each task checks the actual hardware, software stack and application environment. See the [suite README](armbian-skills/README.md) for installation and maintenance. English is the default, with independent Chinese translations throughout the suite. Development proposals, evaluation history and device captures are excluded.
-
-**Armbian quick start:** [English](armbian-skills/QUICKSTART.md) · [简体中文](armbian-skills/QUICKSTART.zh-CN.md). Connect over SSH, install the skills, and complete a hardware application task using Codex or Claude Code. Install with `bash armbian-skills/install.sh --agent codex` (`claude` or `both` also supported).
+The development package is version 2.0.0, with static board references covering Seeed reComputer RK3576/RK3588 DevKit. Build the self-contained skill before installing from a source checkout; runtime tools use Python 3.9+ standard library. No v1 compatibility or migration is provided. See [installation](armbian-skills/README.md), [quick start](armbian-skills/QUICKSTART.md) and [简体中文](armbian-skills/QUICKSTART.zh-CN.md).
 
 ## 🚀 Installation
 
-This repository contains independent skills under `skills/` and the [Armbian suite](armbian-skills/README.md) under `armbian-skills/`. Install an individual Armbian skill from `armbian-skills/skills/{skill-name}/`; the suite parent is a maintenance directory.
+This repository contains independent skills under `skills/` and the [Armbian suite](armbian-skills/README.md) under `armbian-skills/`. Build and install the complete `armbian-skills/skills/armbian-hardware/` directory; the suite parent contains maintenance sources.
 
 To use a skill from this repository:
 
@@ -51,7 +43,7 @@ After installing a skill, open its README and complete its dependency setup befo
 - **[cv181x-media](skills/cv181x-media/README.md)**: skill usage and project-specific workflow
 - **[ee-datasheet-master](skills/ee-datasheet-master/README.md)**: Python dependencies for `scripts/pdf_tools.py`
 - **[schematic-analyzer](skills/schematic-analyzer/README.md)**: Python dependencies, KiCad CLI, `pcbparts` MCP, and `ee-datasheet-master` / `pdf` prerequisites
-- **Armbian skills**: install any complete `armbian-skills/skills/{skill-name}/` directory independently; local reference matching uses Python 3.9+ standard library. The optional target probe uses Python 3 and is included only in `armbian-device-capabilities`. Application compilers, SDKs, runtimes, device access, and wiring depend on the actual project; no particular MCP or other Armbian skill is required.
+- **Armbian hardware**: build and install the complete `armbian-skills/skills/armbian-hardware/` package; see [Armbian README](armbian-skills/README.md). One entry covers capability, integration, deployment and diagnosis; offline tools use Python standard library.
 
 Recommended install order when you need schematic analysis:
 
