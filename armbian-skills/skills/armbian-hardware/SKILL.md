@@ -20,6 +20,8 @@ Start at the requested stage; read another workflow only when needed to complete
 
 For diagnosis, answer the present question and give the smallest useful next check within the user's scope. Keep observations, inferred causes and unverified effects separate. A limited search without results does not prove absence; registered/enabled hardware does not prove physical operation or use by the application. Follow [evidence interpretation](references/common/verification.md) before turning observations into installation, wiring or workload advice.
 
+For GPIO wiring or a physical check, state the selected pin's header-side voltage, SoC-side voltage and translation path in the answer. Read the [bounded GPIO guide](references/recipes/bounded-gpio-command/guide.md) before delivering a CLI test: include conditional finite hold, cancellation and release checks. A missing execution precondition can defer driving the pin while still allowing useful conditional steps; do not end at another help request when the known version and mapping already support explaining that procedure.
+
 ## Find applicable knowledge
 
 Run commands relative to this skill's directory, from the operator's host. Python 3.9+ standard library is sufficient. These commands are offline and never control hardware:

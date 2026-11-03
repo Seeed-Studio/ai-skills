@@ -11,6 +11,8 @@ description: 识别 Armbian 设备能力，在现有应用中集成硬件功能�
 
 诊断先回答当前问题，再给用户范围内最小的有效核查。观测、原因推断和未验证效果分别说明；有限查找没有结果不等于不存在，硬件已注册/启用不等于物理运作或已被应用使用。在据此给安装、接线或负载建议前，按[证据解释](references/common/verification.zh-CN.md)判断结论能到哪一层。
 
+涉及GPIO接线或物理检查时，在答复中明确所选针脚的排针侧电压、SoC侧电压与转换路径。交付CLI测试前读取[有限时GPIO指导](references/recipes/bounded-gpio-command/guide.zh-CN.md)，给出条件式有限保持、取消和释放检查。缺少执行前提可暂停驱动针脚，但仍可先交付有用的条件式步骤；已知版本与映射足以解释步骤时，不只停在再次索取help。
+
 先在技能目录运行 `python3 scripts/armbian.py info` 获取版本、来源和验证范围，不输出完整 manifest 哈希清单。随后运行 `python3 scripts/armbian.py search "容器视频没有硬解"` 找候选资料；以 `match --facts /project/task-facts.json` 判断适用条件，以 `explain --ref common.identity --facts /project/task-facts.json` 查看原因和必要依赖。以上仅在主机离线检索，需要 Python 3.9+ 标准库，不连接或控制设备。已有事实时搜索也应加 `--facts`，避免重复整理或猜测事实。搜索分数不证明身份、针脚、电压或兼容性。按返回的绝对 `read_path` 读取资料；`path` 相对于 `reference_root`，不是技能根目录。读取选中资料及必要依赖，遵循[匹配契约](references/common/reference-matching.zh-CN.md)。缺失事实保留未知，不套用其他载板针脚。
 
 针对排针位置，运行 `python3 scripts/armbian.py pins --board seeed.recomputer-rk3588-devkit --revision v1.0 --connector J10 --pins 23 40` 定向查看完整选中记录、共网关系、电气约束和来源，替代整份针脚表读取。只使用任务有依据的精确板卡、revision、连接器选择器；它们不证明当前设备身份。已有当前事实可加 `--facts`；未知组合不套用相似板卡。驱动电流和元件规格未知时，不由标称电压推导 GPIO 直驱负载/LED 可行或指定电阻值。用 explain 查看必要依赖，遇缺失或冲突再读完整资料。

@@ -1,8 +1,8 @@
 {
   "channel": "development",
   "files": {
-    "SKILL.md": "c5a56df542ef9f4073c380061326500ef34ba16590462730827d6ac49475897d",
-    "SKILL.zh-CN.md": "6b9055497ed54a4abe28f856b70eaaaaf2b1e4dbb8bb2c8f73c7e16064bd6667",
+    "SKILL.md": "4fda8fc7d0e0f5621f2782a68ef499a23fe395679916459cf8b672bdc200d8f3",
+    "SKILL.zh-CN.md": "2903ea824ec69e4f5dcadc19f68bda45e58e2c259ddea6e23d97c15e1a696855",
     "agents/openai.yaml": "5568617950f4da63433a57800223f1daecdb3c02cfbd53532ec50078f0ef0a40",
     "references/INDEX.md": "994255643d0bb8262bfbcf863874cadd4e19668924c03144bf8e1524c20db8bf",
     "references/INDEX.zh-CN.md": "cb1986948e762195b1a610d61ad8c74bca71b3432dc367e2ffb62bf5454fef95",
