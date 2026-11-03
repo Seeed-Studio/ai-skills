@@ -3187,7 +3187,7 @@ entries:
   updated_at: '2026-11-03'
   summary: AHT20 I2C address, status and preparation evidence
   path: capabilities/i2c/aht20.md
-  content_digest: sha256:c1222f8f928f2529ead739704d9efc56b692145f5c6ddad263326b76bcaf6794
+  content_digest: sha256:8808aac9fa3ea59b887b07da0990465fa0ba3d80d19df5b3696f88402e23ae6b
 - schema_version: '1'
   id: capability.npu
   kind: capability
