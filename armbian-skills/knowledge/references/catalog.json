@@ -4050,7 +4050,7 @@
       "updated_at": "2026-11-03",
       "summary": "AHT20 I2C address, status and preparation evidence",
       "path": "capabilities/i2c/aht20.md",
-      "content_digest": "sha256:6f5fb0c8803cd0afd55e0841c740bcc9c64a9415eb706dca1868cdbc5d39d6b3"
+      "content_digest": "sha256:c1222f8f928f2529ead739704d9efc56b692145f5c6ddad263326b76bcaf6794"
     },
     {
       "schema_version": "1",
@@ -4362,10 +4362,10 @@
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-19",
+      "updated_at": "2026-11-03",
       "summary": "Checking application access",
       "path": "common/linux-device-access.md",
-      "content_digest": "sha256:aee7402b9ed92000eb19f5057fb58419949ffa459c4ab1a6c5b1c490acad4256"
+      "content_digest": "sha256:f593dc872203c150985991608cf87ece9152dbd4d30f3987196e019f84b6134c"
     },
     {
       "schema_version": "1",
