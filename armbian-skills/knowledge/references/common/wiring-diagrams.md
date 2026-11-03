@@ -19,7 +19,7 @@ sources:
 validation_refs: []
 maturity: documented
 owner: armbian-platform-maintainers
-updated_at: '2026-10-22'
+updated_at: '2026-11-03'
 ---
 
 [English](wiring-diagrams.md) | [简体中文](wiring-diagrams.zh-CN.md)
@@ -81,3 +81,9 @@ Other peripherals/platforms use the same presentation method, with their own ver
 ## Adding a board or view
 
 Maintain wiring-layout.yaml per board/revision with orientation provenance, observation side, connector edge, pin1 end and a physical pin matrix in that view. A schematic netlist proves electrical routing, not assembled-board orientation. Missing orientation evidence blocks only the physical pin locator. The example renderer rejects unsupported views; adapt coordinates to the relevant layout rather than silently substituting another board.
+
+## GPIO: keep voltage domains and load endpoints visible
+
+A translated GPIO has two different electrical sides. Use the selected pin record to name the translator and each side's nominal voltage. For example, **RK3588 DevKit V1.0 J10-12** is GPIO1_A7 → U34 A8/B8 → header: SoC side **1.8V**, header side **3.3V**. This is a documented route, not a measured value or a claim of direct LED-drive capability. Other pins may have direct paths; do not generalize this translation to every GPIO.
+
+For an unloaded voltage check, draw `verified header signal → red V probe; verified header GND → black COM probe`, with a high-input-impedance DC voltmeter and no other load/external source. For an LED, identify anode/cathode by component evidence. Only after the GPIO/translator's load budget and LED/resistor requirements are verified may a direct active-high loop be shown as `header signal → series resistor → LED anode (+); LED cathode (−) → GND`. This conditional endpoint description is not permission to connect an unqualified LED. Otherwise leave that load disconnected and mark the needed driver/load design as unresolved. Never infer resistor value, allowable current or 5V tolerance from a nominal 3.3V label.

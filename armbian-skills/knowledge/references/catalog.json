@@ -3910,10 +3910,10 @@
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-19",
+      "updated_at": "2026-11-03",
       "summary": "GPIO application development",
       "path": "capabilities/gpio/overview.md",
-      "content_digest": "sha256:cfe0d83b1d08d5e274a074c9bd6549358302ced185b9ca8401c77f85e40ab847"
+      "content_digest": "sha256:cea01eed3b1f1fb4a495e6b5e64041a64eed4c57faf1cfa306d9460c0e166a2f"
     },
     {
       "schema_version": "1",
@@ -4445,10 +4445,10 @@
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-22",
+      "updated_at": "2026-11-03",
       "summary": "Show users how to wire the actual task",
       "path": "common/wiring-diagrams.md",
-      "content_digest": "sha256:b81c39478dac611762485768be120f9037c1a43e484438a4d9a73c09c7710bce"
+      "content_digest": "sha256:fbe3aa986964b16188af8c268729f85fbf6ce96d99acb74921357b003ebb662f"
     },
     {
       "schema_version": "1",
@@ -5247,14 +5247,16 @@
       "related": [
         "stack.linux-gpio-chardev.recovery"
       ],
-      "sources": [],
+      "sources": [
+        "source.libgpiod-tools"
+      ],
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-20",
+      "updated_at": "2026-11-03",
       "summary": "A bounded GPIO feature for beginners",
       "path": "recipes/bounded-gpio-command/guide.md",
-      "content_digest": "sha256:00f37473a9268e719af7ccb22263fe39c51aa6a5527ef66f16c5db4ed54c0ae0"
+      "content_digest": "sha256:1100a667c78c4077bad26b832307e79705235014640d7e4e82bcc032082fa374"
     },
     {
       "schema_version": "1",
@@ -5841,10 +5843,10 @@
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-19",
+      "updated_at": "2026-11-03",
       "summary": "GPIO application integration",
       "path": "stacks/linux-gpio-chardev/integration.md",
-      "content_digest": "sha256:7df4ac6959c62db9d05b9ddac919a5fe72c3a9ebd78d282d21953fa580e83210"
+      "content_digest": "sha256:59ac1e5574f6fc388fa2268c7a287044fa373675f4f1a9f0058b7bc5cb53339a"
     },
     {
       "schema_version": "1",
