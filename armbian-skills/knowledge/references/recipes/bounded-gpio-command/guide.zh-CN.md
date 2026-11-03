@@ -45,8 +45,10 @@ gpioset -c "$chip" --hold-period 10s --toggle 0 "${offset}=1"
 
 `--hold-period` 指最短保持时间，**单独使用不是停止计时器**；末项 `--toggle 0` 让本检查在保持结束后退出，不再循环请求另一个电平。保持前台，Ctrl+C可提前取消。在请求仍持有时读表；到时释放前没读到就记为未测量，不用释放后的电压冒充保持期间结果。需要低电平读数时，重新核对归属，再把同一有限命令改成 `${offset}=0`；不把释放当低电平测试，不用 `gpioget` 抢读正在输出的脚。
 
-正常退出或取消后，用目标版本支持的 `gpioinfo` 与mux元数据核对自己的consumer已消失。busy、权限、选项或bias不支持都停止该阶段，不强占、不静默回退。按[恢复指导](../../stacks/linux-gpio-chardev/recovery.zh-CN.md)分别记录释放、方向/配置与实测电压；只恢复已知且适当的设置，明确原bias、恢复后电压等未知项。有限命令仍需考虑电路的故障/掉电行为，不是硬件安全联锁。
+正常退出或取消后，按当前版本line与mux元数据核对自己的consumer已消失。目标 **2.x `gpioinfo --help`** 确认支持`-c`及位置参数line offset时，使用`gpioinfo -c "$chip" "$offset"`。不把`gpioinfo /dev/gpiochipN`当位置参数选chip，2.x可能将它解释为line名称；不套其他版本的`line 7:`/`unused`文本筛选，核对所选记录的实际USED/consumer字段。已释放的line仍可能报告output方向。busy、权限、选项或bias不支持都停止该阶段，不强占、不静默回退。按[恢复指导](../../stacks/linux-gpio-chardev/recovery.zh-CN.md)分别记录释放、方向/配置与实测电压；只恢复已知且适当的设置，明确原bias、恢复后电压等未知项。有限命令仍需考虑电路的故障/掉电行为，不是硬件安全联锁。
 
 目标选项不同或缺失时，以项目已核对的原生API或进程管理方式实现有限生命周期，不为一次GPIO检查安装新daemon。
 
 语法参考：[官方 gpioset 文档](https://libgpiod.readthedocs.io/en/master/gpioset.html)；上游开发文档不代表目标已安装版本。
+
+选错控制器或保持太短是明确的配置问题，不证明它是唯一原因，也不能排除电气损坏。软件成功、正常退出或没有内核错误，都不验证或排除物理损坏；即使空载高低电压正确，也只证明该line在该条件下的结果，不证明整板健康、LED带载能力或所有GPIO正常。

@@ -5287,7 +5287,7 @@
       "updated_at": "2026-11-03",
       "summary": "A bounded GPIO feature for beginners",
       "path": "recipes/bounded-gpio-command/guide.md",
-      "content_digest": "sha256:1100a667c78c4077bad26b832307e79705235014640d7e4e82bcc032082fa374"
+      "content_digest": "sha256:0a233d620a4b9fa099261644c33a6cc661b107273c71964de66bca12241cfada"
     },
     {
       "schema_version": "1",
@@ -5912,10 +5912,10 @@
       "validation_refs": [],
       "maturity": "documented",
       "owner": "armbian-platform-maintainers",
-      "updated_at": "2026-10-19",
+      "updated_at": "2026-11-03",
       "summary": "GPIO lifetime, exit, and recovery",
       "path": "stacks/linux-gpio-chardev/recovery.md",
-      "content_digest": "sha256:aba1dabe4464f714b62041f4d5742aa34bc9cf69c3650b41e09194695f8866d0"
+      "content_digest": "sha256:588335c709cf93c446b4a59d4f6152be9a51974c79d2b9907da2af07044e9154"
     },
     {
       "schema_version": "1",

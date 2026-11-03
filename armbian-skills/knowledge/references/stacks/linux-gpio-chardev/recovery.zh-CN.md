@@ -19,7 +19,7 @@ sources:
 validation_refs: []
 maturity: documented
 owner: armbian-platform-maintainers
-updated_at: '2026-10-19'
+updated_at: '2026-11-03'
 ---
 
 [English](recovery.md) | [简体中文](recovery.zh-CN.md)
@@ -45,3 +45,5 @@ updated_at: '2026-10-19'
 ## 验收记录
 
 分别记录保持窗口内的仪表值、退出/信号/释放事件、恢复动作与最后metadata、以及恢复后是否再次物理测量。无法测到短暂清理脉冲就记录未测量，不能用软件回读补成波形通过。恢复方向后没有重测的电压保持未知。
+
+请求成功或没有内核错误不能排除电气损坏。错误路由/短时保持是已知测试缺陷，不是完整物理诊断。仪表结果只覆盖被测line与负载条件，两次空载电压不能认证整板健康或输出电流能力。

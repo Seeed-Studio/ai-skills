@@ -19,7 +19,7 @@ sources:
 validation_refs: []
 maturity: documented
 owner: armbian-platform-maintainers
-updated_at: '2026-10-19'
+updated_at: '2026-11-03'
 ---
 
 [English](recovery.md) | [简体中文](recovery.zh-CN.md)
@@ -45,3 +45,5 @@ Running gpioget once is not a universal restoration method. It requests the line
 ## Acceptance records
 
 Separately record readings during the hold window, exit/signal/release events, restoration actions/final metadata, and whether physical measurements were repeated afterward. Mark a brief cleanup pulse unmeasured when it could not be observed; software readback cannot substitute for waveform evidence. Voltage remains unknown after direction restoration without a new measurement.
+
+Request success and the absence of kernel errors do not exclude electrical damage. A wrong route/brief hold is a known test defect, not a complete physical diagnosis. Report instrument results for the tested line and load only; two unloaded voltage readings cannot certify the board or its drive-current capability.
