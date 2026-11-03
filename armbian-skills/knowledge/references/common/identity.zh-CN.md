@@ -13,7 +13,7 @@ sources: []
 validation_refs: []
 maturity: documented
 owner: armbian-platform-maintainers
-updated_at: '2026-10-19'
+updated_at: '2026-11-03'
 ---
 
 [English](identity.md) | [简体中文](identity.zh-CN.md)
@@ -27,3 +27,5 @@ Device Tree compatible 精确匹配只提供候选身份，用户提示和名称
 匹配辅助不会读取历史快照补齐当前事实，也不依据 board ID 自动授权输出。对 GPIO 写操作，需要连接器、物理编号/方向、电气、SoC 到控制器/line 的可靠映射，以及当前 mux/consumer。缺少一项时仅暂停依赖它的操作。
 
 重新连接或更改内核、overlay、用户/容器、runtime 后，刷新相应事实；证据注明时间、目标和来源。不要将 SSH 地址、密码、用户文件或原始采集结果提交到共享资料。
+
+当前任务需要连接器映射、而已给事实不能确定板型/revision时，识别这一缺口后就停止依赖板型的查阅。不为多个候选板查询针脚或读取其平台/输出方案，只为最后再问用户是哪块板；直接补问缺少的身份，同时继续回答通用接口问题或做不依赖身份的代码工作。

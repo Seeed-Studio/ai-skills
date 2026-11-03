@@ -4,7 +4,9 @@
 
 ## 资料与目标
 
-从本包 [资料入口](../references/INDEX.zh-CN.md)、[身份规则](../references/common/identity.zh-CN.md) 开始，运行 `python3 scripts/armbian.py info` 读取实际版本。历史报告不是当前设备状态。
+先读取本轮附件、[身份规则](../references/common/identity.zh-CN.md)，运行 `python3 scripts/armbian.py info` 读取实际版本。定向搜索，只在需要导航时打开[资料入口](../references/INDEX.zh-CN.md)。历史报告不是当前设备状态。
+
+连接器路由依赖的板型/revision缺失时，下一步是补齐身份，不是遍历支持的板卡。没有有据可选的档案前，不查询候选针脚、读取其接线/输出方案或展开平台依赖；解释通用编号差异，询问能决定本任务的少量事实，并继续不依赖这些针脚的工作。
 
 区分工作区、构建主机和运行设备。使用用户指定且已授权的本机、SSH 或终端连接器，不规定某一种 MCP；连接失败不能改在 Host 操作硬件。以当前 compatible、系统/kernel 和硬件身份确定 board/SoC 候选；未知 revision 保留未知，同 SoC 不能继承另一载板排针/电气。
 

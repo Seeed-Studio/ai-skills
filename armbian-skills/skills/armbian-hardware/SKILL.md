@@ -20,7 +20,11 @@ Start at the requested stage; read another workflow only when needed to complete
 
 For diagnosis, answer the present question and give the smallest useful next check within the user's scope. Keep observations, inferred causes and unverified effects separate. A limited search without results does not prove absence; registered/enabled hardware does not prove physical operation or use by the application. Follow [evidence interpretation](references/common/verification.md) before turning observations into installation, wiring or workload advice.
 
-For GPIO wiring or a physical check, state the selected pin's header-side voltage, SoC-side voltage and translation path in the answer. Read the [bounded GPIO guide](references/recipes/bounded-gpio-command/guide.md) before delivering a CLI test: include conditional finite hold, cancellation and release checks. A missing execution precondition can defer driving the pin while still allowing useful conditional steps; do not end at another help request when the known version and mapping already support explaining that procedure.
+Read the current user attachments before board-specific lookup. If a physical-pin answer depends on an exact board/revision that is missing, explain the known numbering distinction and ask for those missing identity facts; do not enumerate candidate boards, query their pins, or prepare their wiring/drive commands. Continue generic explanations or independent code where identity is irrelevant.
+
+For GPIO wiring or a physical check **after the board/revision is resolved**, state the selected pin's header-side voltage, SoC-side voltage and translation path in the answer. Read the [bounded GPIO guide](references/recipes/bounded-gpio-command/guide.md) before delivering a CLI test: include conditional finite hold, cancellation and release checks. A missing execution precondition can defer driving the pin while still allowing useful conditional steps; do not end at another help request when the known version and mapping already support explaining that procedure.
+
+For I2C transactions, use the named device's protocol rather than a remembered register/probe pattern. For AHT20, read the short [address/status and evidence rules](references/capabilities/i2c/aht20.md) before proposing a transaction. Preparation-only requests can end with the missing application-user/access check; they do not require device I/O.
 
 ## Find applicable knowledge
 

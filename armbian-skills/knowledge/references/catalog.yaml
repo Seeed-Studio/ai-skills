@@ -3160,10 +3160,34 @@ entries:
   validation_refs: []
   maturity: documented
   owner: armbian-platform-maintainers
-  updated_at: '2026-10-19'
+  updated_at: '2026-11-03'
   summary: I2C application development
   path: capabilities/i2c/overview.md
-  content_digest: sha256:aaa2321dfdee90ed0bbeab2f2126163df27036247bf4a9c46664782c9c9ec9a5
+  content_digest: sha256:77cc256d3d0c6652d2ba1bbc90521cc60f63cb0b6fe7500b93c2d1a80f5dd89e
+- schema_version: '1'
+  id: capability.i2c.aht20
+  kind: capability_guide
+  applies_to:
+    capabilities:
+    - i2c
+  required_refs:
+  - capability.i2c
+  - common.linux-device-access
+  preconditions: []
+  refines: []
+  excludes: []
+  related:
+  - stack.linux-i2c-dev.detection
+  sources:
+  - source.asair-aht20-v11
+  - source.linux-i2c-api
+  validation_refs: []
+  maturity: documented
+  owner: armbian-platform-maintainers
+  updated_at: '2026-11-03'
+  summary: AHT20 I2C address, status and preparation evidence
+  path: capabilities/i2c/aht20.md
+  content_digest: sha256:6f5fb0c8803cd0afd55e0841c740bcc9c64a9415eb706dca1868cdbc5d39d6b3
 - schema_version: '1'
   id: capability.npu
   kind: capability
@@ -3399,10 +3423,10 @@ entries:
   validation_refs: []
   maturity: documented
   owner: armbian-platform-maintainers
-  updated_at: '2026-10-19'
+  updated_at: '2026-11-03'
   summary: Device identity and platform boundaries
   path: common/identity.md
-  content_digest: sha256:d7b1a9d40fb2b32342887647d2fdee83dea82c608bfa615fe8e609129af47945
+  content_digest: sha256:64061067ee5b51f01a2d452c56f167ef40d81262d6354c2c34975aaf32d51aaa
 - schema_version: '1'
   id: common.linux-device-access
   kind: common
@@ -4213,282 +4237,287 @@ entries:
   kind: source
   path: sources/index.yaml
   entry_id: source.aht20-v11-manual
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
+- id: source.asair-aht20-v11
+  kind: source
+  path: sources/index.yaml
+  entry_id: source.asair-aht20-v11
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.cached-camera-dtsi
   kind: source
   path: sources/index.yaml
   entry_id: source.cached-camera-dtsi
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.cached-pinctrl
   kind: source
   path: sources/index.yaml
   entry_id: source.cached-pinctrl
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.cached-soc-dtsi
   kind: source
   path: sources/index.yaml
   entry_id: source.cached-soc-dtsi
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.cached-vendor-dts
   kind: source
   path: sources/index.yaml
   entry_id: source.cached-vendor-dts
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.ffmpeg
   kind: source
   path: sources/index.yaml
   entry_id: source.ffmpeg
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.go-cgo
   kind: source
   path: sources/index.yaml
   entry_id: source.go-cgo
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.libgpiod-tools
   kind: source
   path: sources/index.yaml
   entry_id: source.libgpiod-tools
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-can
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-can
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-gpio-api
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-gpio-api
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-gpio-lifetime
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-gpio-lifetime
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-i2c-api
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-i2c-api
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-pwm
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-pwm
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.linux-spidev
   kind: source
   path: sources/index.yaml
   entry_id: source.linux-spidev
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-board-config
   kind: source
   path: sources/index.yaml
   entry_id: source.local-board-config
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-bootscript
   kind: source
   path: sources/index.yaml
   entry_id: source.local-bootscript
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-extension-entry
   kind: source
   path: sources/index.yaml
   entry_id: source.local-extension-entry
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-family-config
   kind: source
   path: sources/index.yaml
   entry_id: source.local-family-config
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-kernel-config
   kind: source
   path: sources/index.yaml
   entry_id: source.local-kernel-config
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-mainline-dts
   kind: source
   path: sources/index.yaml
   entry_id: source.local-mainline-dts
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-overlays-note
   kind: source
   path: sources/index.yaml
   entry_id: source.local-overlays-note
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-board
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-board
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-dts
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-dts
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-pinctrl
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-pinctrl
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-soc-dtsi
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-soc-dtsi
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-vccio3-pinctrl
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-vccio3-pinctrl
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-rk3588-vendor-dts
   kind: source
   path: sources/index.yaml
   entry_id: source.local-rk3588-vendor-dts
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.local-uboot-dts
   kind: source
   path: sources/index.yaml
   entry_id: source.local-uboot-dts
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.maintainer-rk3588-j10-orientation
   kind: source
   path: sources/index.yaml
   entry_id: source.maintainer-rk3588-j10-orientation
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.mesa-panfrost
   kind: source
   path: sources/index.yaml
   entry_id: source.mesa-panfrost
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.node-child-process
   kind: source
   path: sources/index.yaml
   entry_id: source.node-child-process
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-can0
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-can0
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-can1
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-can1
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-i2c3
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-i2c3
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-pwm2-ch6
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-pwm2-ch6
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-uart3
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-uart3
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-40pin-uart5
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-40pin-uart5
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v2
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v2
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v3
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-cam0-rpi-v3
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v2
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v2
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v3
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-cam1-rpi-v3
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-dp-4k
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-dp-4k
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-halow-wifi
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-halow-wifi
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.overlay.recomputer-rk3576-devkit-raspi-7inch-touchscreen
   kind: source
   path: sources/index.yaml
   entry_id: source.overlay.recomputer-rk3576-devkit-raspi-7inch-touchscreen
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.rknn-project
   kind: source
   path: sources/index.yaml
   entry_id: source.rknn-project
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.rknn-v232-sdk
   kind: source
   path: sources/index.yaml
   entry_id: source.rknn-v232-sdk
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.rust-ffi
   kind: source
   path: sources/index.yaml
   entry_id: source.rust-ffi
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.rust-owned-fd
   kind: source
   path: sources/index.yaml
   entry_id: source.rust-owned-fd
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-interfaces
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-interfaces
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-overview
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-overview
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-product
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-product
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-resources
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-resources
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-rk3576-official-40pin-image
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-rk3576-official-40pin-image
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-rk3588-v1-schematic
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-rk3588-v1-schematic
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.seeed-schematic-v1
   kind: source
   path: sources/index.yaml
   entry_id: source.seeed-schematic-v1
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - id: source.vulkan-device-selection
   kind: source
   path: sources/index.yaml
   entry_id: source.vulkan-device-selection
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - schema_version: '1'
   id: sources.index
   kind: source_registry
@@ -4505,7 +4534,7 @@ entries:
   updated_at: '2026-10-22'
   summary: sources.index
   path: sources/index.yaml
-  content_digest: sha256:754e32ae13c988e0a7d2e02a2ae4106270177c9c01c84344327dfc5bf5e3e347
+  content_digest: sha256:a67e9f2003d3e3fa83878c883e2902ef64eec5aa6ad553bb44645401253b12e0
 - schema_version: '1'
   id: stack.linux-gpio-chardev
   kind: stack
@@ -4675,10 +4704,10 @@ entries:
   validation_refs: []
   maturity: documented
   owner: armbian-platform-maintainers
-  updated_at: '2026-10-19'
+  updated_at: '2026-11-03'
   summary: 'Linux i2c-dev: detection'
   path: stacks/linux-i2c-dev/detection.md
-  content_digest: sha256:65e4c7a70a0e1ea9e84f5fab96c1cc690d7a76acb7efdeb7cec23064e4b14f5b
+  content_digest: sha256:40057adad0f3acaae14dcbc0245a5623179e0e6ffe394c1c073d22ad29266d6c
 - schema_version: '1'
   id: stack.linux-i2c-dev.integration
   kind: stack_guide

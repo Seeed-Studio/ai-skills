@@ -11,7 +11,11 @@ description: 识别 Armbian 设备能力，在现有应用中集成硬件功能�
 
 诊断先回答当前问题，再给用户范围内最小的有效核查。观测、原因推断和未验证效果分别说明；有限查找没有结果不等于不存在，硬件已注册/启用不等于物理运作或已被应用使用。在据此给安装、接线或负载建议前，按[证据解释](references/common/verification.zh-CN.md)判断结论能到哪一层。
 
-涉及GPIO接线或物理检查时，在答复中明确所选针脚的排针侧电压、SoC侧电压与转换路径。交付CLI测试前读取[有限时GPIO指导](references/recipes/bounded-gpio-command/guide.zh-CN.md)，给出条件式有限保持、取消和释放检查。缺少执行前提可暂停驱动针脚，但仍可先交付有用的条件式步骤；已知版本与映射足以解释步骤时，不只停在再次索取help。
+板级查阅前先读取本轮用户附件。物理针脚答案依赖的精确板型/revision缺失时，解释已知编号区别并询问缺少的身份事实，不遍历候选板卡、不查询其针脚、不为候选板准备接线/输出命令；继续与身份无关的通用解释或独立代码。
+
+板型/revision明确后，涉及GPIO接线或物理检查时，在答复中明确所选针脚的排针侧电压、SoC侧电压与转换路径。交付CLI测试前读取[有限时GPIO指导](references/recipes/bounded-gpio-command/guide.zh-CN.md)，给出条件式有限保持、取消和释放检查。缺少执行前提可暂停驱动针脚，但仍可先交付有用的条件式步骤；已知版本与映射足以解释步骤时，不只停在再次索取help。
+
+I2C事务依据已确认器件的协议，不套记忆中的寄存器/探测模式。AHT20提出事务前读取[地址、状态与证据规则](references/capabilities/i2c/aht20.zh-CN.md)。只做准备判断时，可以停在项目实际用户/访问条件的最小核查，不必发器件事务。
 
 先在技能目录运行 `python3 scripts/armbian.py info` 获取版本、来源和验证范围，不输出完整 manifest 哈希清单。随后运行 `python3 scripts/armbian.py search "容器视频没有硬解"` 找候选资料；以 `match --facts /project/task-facts.json` 判断适用条件，以 `explain --ref common.identity --facts /project/task-facts.json` 查看原因和必要依赖。以上仅在主机离线检索，需要 Python 3.9+ 标准库，不连接或控制设备。已有事实时搜索也应加 `--facts`，避免重复整理或猜测事实。搜索分数不证明身份、针脚、电压或兼容性。按返回的绝对 `read_path` 读取资料；`path` 相对于 `reference_root`，不是技能根目录。读取选中资料及必要依赖，遵循[匹配契约](references/common/reference-matching.zh-CN.md)。缺失事实保留未知，不套用其他载板针脚。
 

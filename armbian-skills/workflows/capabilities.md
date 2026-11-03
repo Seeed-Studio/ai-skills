@@ -4,7 +4,9 @@ Help users understand what the device can do, through which interface, what is m
 
 ## References and target
 
-Start with this package's [index](../references/INDEX.md), [identity rules](../references/common/identity.md), and actual version from `python3 scripts/armbian.py info`. Historical reports are not current target state.
+Start with the current attachments, [identity rules](../references/common/identity.md), and actual version from `python3 scripts/armbian.py info`. Use targeted search; open the [index](../references/INDEX.md) only when navigation is needed. Historical reports are not current target state.
+
+When connector routing depends on missing board/revision identity, the useful next step is that identity, not a tour of supported boards. Do not query candidate pinouts, read their wiring/drive recipes or expand platform dependencies before selecting a justified profile. Explain generic numbering and ask for the few facts that settle this task; continue work that does not depend on those pins.
 
 Distinguish workspace, build host, and runtime device. Use the user's specified authorized local/SSH/terminal connection without requiring a particular MCP. A failed connection does not justify running target hardware operations on the host. Use current compatible, system/kernel, and hardware identity for board/SoC candidates. Unknown revision stays unknown; a matching SoC does not establish another carrier's pinout/electrical conditions.
 

@@ -571,3 +571,12 @@ source_entries:
   locator: Synopsis and chip option; version must be checked against target help
   accessed_at: '2026-10-29'
   scope: Upstream development documentation, not the installed target version; verify target --version and --help before use.
+- id: source.asair-aht20-v11
+  kind: source
+  title: ASAIR AHT20 Product Manual V1.1
+  source_type: official_web
+  url: https://files.seeedstudio.com/wiki/Grove-AHT20_I2C_Industrial_Grade_Temperature_and_Humidity_Sensor/AHT20-datasheet-2020-4-16.pdf
+  sha256: fdde700957ba5b6a7b29d0be4d7f4839b8465816e5faf95b6da435cc3f0ee44d
+  locator: Page 8, sections 5.3/5.4 and the address plus R/W read timing diagram; visually reviewed
+  accessed_at: '2026-11-03'
+  scope: Manufacturer protocol only; 0x71 is an on-wire address byte, not an i2c-dev payload; no target access or functional validation.
